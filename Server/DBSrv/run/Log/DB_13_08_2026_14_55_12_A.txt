@@ -1,0 +1,24 @@
+[13/08/2026][14:55:12]  | -system start log[13/08/2026][14:57:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][14:57:42]  | -system -Write Ranking[13/08/2026][14:57:42]  | -system -Write Ranking[13/08/2026][15:00:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:00:12]  | -system -Write Ranking[13/08/2026][15:00:12]  | -system -Write Ranking[13/08/2026][15:02:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:02:42]  | -system -Write Ranking[13/08/2026][15:02:42]  | -system -Write Ranking[13/08/2026][15:03:55]  | -system clo server fd 0[13/08/2026][15:04:57]  | -system clo server fd 0[13/08/2026][15:05:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:05:12]  | -system -Write Ranking[13/08/2026][15:05:12]  | -system -Write Ranking[13/08/2026][15:07:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:07:42]  | -system -Write Ranking[13/08/2026][15:07:42]  | -system -Write Ranking[13/08/2026][15:10:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:10:12]  | -system -Write Ranking[13/08/2026][15:10:12]  | -system -Write Ranking[13/08/2026][15:12:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:12:42]  | -system -Write Ranking[13/08/2026][15:12:42]  | -system -Write Ranking[13/08/2026][15:15:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:15:12]  | -system -Write Ranking[13/08/2026][15:15:12]  | -system -Write Ranking[13/08/2026][15:17:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:17:42]  | -system -Write Ranking[13/08/2026][15:17:42]  | -system -Write Ranking[13/08/2026][15:20:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:20:12]  | -system -Write Ranking[13/08/2026][15:20:12]  | -system -Write Ranking[13/08/2026][15:22:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:22:42]  | -system -Write Ranking[13/08/2026][15:22:42]  | -system -Write Ranking[13/08/2026][15:25:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:25:12]  | -system -Write Ranking[13/08/2026][15:25:12]  | -system -Write Ranking[13/08/2026][15:27:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:27:42]  | -system -Write Ranking[13/08/2026][15:27:42]  | -system -Write Ranking[13/08/2026][15:30:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:30:12]  | -system -Write Ranking[13/08/2026][15:30:12]  | -system -Write Ranking[13/08/2026][15:32:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:32:42]  | -system -Write Ranking[13/08/2026][15:32:42]  | -system -Write Ranking[13/08/2026][15:35:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:35:12]  | -system -Write Ranking[13/08/2026][15:35:12]  | -system -Write Ranking[13/08/2026][15:37:42]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:37:42]  | -system -Write Ranking[13/08/2026][15:37:42]  | -system -Write Ranking[13/08/2026][15:40:12]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:40:12]  | -system -Write Ranking[13/08/2026][15:40:12]  | -system -Write Ranking[13/08/2026][15:42:43]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:42:43]  | -system -Write Ranking[13/08/2026][15:42:43]  | -system -Write Ranking[13/08/2026][15:45:13]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:45:13]  | -system -Write Ranking[13/08/2026][15:45:13]  | -system -Write Ranking[13/08/2026][15:47:43]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:47:43]  | -system -Write Ranking[13/08/2026][15:47:43]  | -system -Write Ranking[13/08/2026][15:50:13]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:50:13]  | -system -Write Ranking[13/08/2026][15:50:13]  | -system -Write Ranking[13/08/2026][15:52:43]  | -system Read 0 ranking entries in 0.0 seconds.
+[13/08/2026][15:52:43]  | -system -Write Ranking[13/08/2026][15:52:43]  | -system -Write Ranking[13/08/2026][15:55:13]  | -system Read 0 ranking entries in 0.0 seco
