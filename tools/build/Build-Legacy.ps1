@@ -11,6 +11,47 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+function ConvertTo-GitHubCommandValue {
+    param([string]$Value)
+
+    return $Value.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+}
+
+function Publish-BuildDiagnostics {
+    param(
+        [string]$ProjectName,
+        [object[]]$BuildOutput
+    )
+
+    $lines = @($BuildOutput | ForEach-Object { $_.ToString() })
+    $diagnostics = @(
+        $lines |
+            Where-Object {
+                $_ -match '(?i):\s*(fatal\s+)?error\s+' -or
+                $_ -match '(?i)\berror\s+(C\d+|LNK\d+|MSB\d+)'
+            } |
+            Select-Object -First 20
+    )
+
+    if ($diagnostics.Count -eq 0) {
+        $diagnostics = @($lines | Select-Object -Last 20)
+    }
+
+    foreach ($line in $diagnostics) {
+        $escaped = ConvertTo-GitHubCommandValue -Value $line
+        Write-Host "::error title=$ProjectName legacy compile::$escaped"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_STEP_SUMMARY)) {
+        Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### $ProjectName legacy build diagnostics"
+        Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```text'
+        foreach ($line in $diagnostics) {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $line
+        }
+        Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```'
+    }
+}
+
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
 $sourceRoot = Join-Path $repoRoot 'Source'
 $buildRoot = Join-Path $repoRoot "out/legacy/$Configuration"
@@ -91,9 +132,16 @@ try {
             '/verbosity:minimal'
         )
 
-        & $msbuild @arguments
-        if ($LASTEXITCODE -ne 0) {
-            throw "MSBuild failed for $($entry.Name) with exit code $LASTEXITCODE."
+        $buildOutput = @(& $msbuild @arguments 2>&1)
+        $exitCode = $LASTEXITCODE
+
+        foreach ($line in $buildOutput) {
+            Write-Host $line
+        }
+
+        if ($exitCode -ne 0) {
+            Publish-BuildDiagnostics -ProjectName $entry.Name -BuildOutput $buildOutput
+            throw "MSBuild failed for $($entry.Name) with exit code $exitCode."
         }
     }
 }
