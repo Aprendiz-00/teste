@@ -33,12 +33,6 @@ jobs:
             Source
             tools/build
 
-      - name: Normalize parser-only legacy source tokens
-        shell: pwsh
-        run: ./tools/build/Normalize-LegacyCiSources.ps1
-
       - name: Compile TMSrv and DBSrv without link
         shell: pwsh
-        env:
-          CL: /MP /FS
         run: ./tools/build/Build-Legacy.ps1 -Configuration Release -Project All -CompileOnly
