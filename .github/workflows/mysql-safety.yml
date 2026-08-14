@@ -7,17 +7,20 @@ on:
       - 'Source/Code/TMSrv/wMySQL.h'
       - 'Source/Code/DBSrv/dbMySQL.cpp'
       - 'Source/Code/DBSrv/dbMySQL.h'
+      - 'Source/Modern/Platform/Configuration/DatabaseConfig.h'
       - 'tools/ci/Validate-MySqlSafety.ps1'
       - '.github/workflows/mysql-safety.yml'
   push:
     branches:
       - main
       - 'persistence/**'
+      - 'security/**'
     paths:
       - 'Source/Code/TMSrv/wMySQL.cpp'
       - 'Source/Code/TMSrv/wMySQL.h'
       - 'Source/Code/DBSrv/dbMySQL.cpp'
       - 'Source/Code/DBSrv/dbMySQL.h'
+      - 'Source/Modern/Platform/Configuration/DatabaseConfig.h'
       - 'tools/ci/Validate-MySqlSafety.ps1'
       - '.github/workflows/mysql-safety.yml'
 
@@ -36,6 +39,7 @@ jobs:
           sparse-checkout: |
             Source/Code/TMSrv
             Source/Code/DBSrv
+            Source/Modern/Platform/Configuration
             tools/ci
 
       - name: Validate legacy MySQL safety invariants
