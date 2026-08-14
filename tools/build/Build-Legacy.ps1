@@ -55,6 +55,11 @@ function Publish-BuildDiagnostics {
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
 $sourceRoot = Join-Path $repoRoot 'Source'
 $buildRoot = Join-Path $repoRoot "out/legacy/$Configuration"
+$mysqlIncludeDir = Join-Path $sourceRoot 'Code/include_mysql'
+
+if (-not (Test-Path (Join-Path $mysqlIncludeDir 'mysql.h'))) {
+    throw "Vendored MySQL headers not found at: $mysqlIncludeDir"
+}
 
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
 if (-not (Test-Path $vswhere)) {
@@ -94,6 +99,25 @@ foreach ($entry in $projects) {
 $target = if ($CompileOnly) { 'ClCompile' } else { 'Build' }
 
 $originalLib = $env:LIB
+$originalInclude = $env:INCLUDE
+$originalCl = $env:CL
+
+$env:INCLUDE = if ([string]::IsNullOrWhiteSpace($originalInclude)) {
+    $mysqlIncludeDir
+} else {
+    "$mysqlIncludeDir;$originalInclude"
+}
+
+# The legacy source already relies on C++17 syntax in the modern compatibility
+# shim. /utf-8 also makes source parsing deterministic for accented comments
+# and pragma-region labels that previously depended on the developer codepage.
+$requiredCompilerOptions = '/std:c++17 /utf-8'
+$env:CL = if ([string]::IsNullOrWhiteSpace($originalCl)) {
+    $requiredCompilerOptions
+} else {
+    "$requiredCompilerOptions $originalCl"
+}
+
 if (-not $CompileOnly) {
     if ([string]::IsNullOrWhiteSpace($env:WYD_MYSQL_LIB_DIR)) {
         throw 'WYD_MYSQL_LIB_DIR must point to the Win32 MySQL Connector library directory for a full legacy link.'
@@ -119,6 +143,8 @@ try {
         New-Item -ItemType Directory -Force -Path $intDir | Out-Null
 
         Write-Host "[$($entry.Name)] MSBuild target=$target configuration=$Configuration platform=Win32"
+        Write-Host "[$($entry.Name)] MySQL include root: $mysqlIncludeDir"
+        Write-Host "[$($entry.Name)] Required compiler options: $requiredCompilerOptions"
 
         $arguments = @(
             $entry.Path,
@@ -147,6 +173,8 @@ try {
 }
 finally {
     $env:LIB = $originalLib
+    $env:INCLUDE = $originalInclude
+    $env:CL = $originalCl
 }
 
 if ($CompileOnly) {
