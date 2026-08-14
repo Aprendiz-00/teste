@@ -39,12 +39,16 @@ Current Win32 contract:
 - confirmation type `_MSG_CNFAccountLogin`: `0x010A`;
 - account password field: 12 bytes;
 - account login field: 16 bytes;
-- `MSG_AccountLogin` total size: 58 bytes;
+- `MSG_AccountLogin` total size: 116 bytes;
 - `AccountPassword` offset: 12;
 - `AccountLogin` offset: 24;
-- `MacAddres` offset: 40.
+- `MacAddres` offset: 40;
+- `Zero` offset: 58;
+- `Version` offset: 92;
+- `DBNeedSave` offset: 96;
+- `IP` offset: 100.
 
-These assertions protect representation only. They do not change login validation, credential handling, session policy, decoding, or authentication behavior.
+The total size includes the legacy tail fields after the MAC address (`Zero[34]`, version/save flags and four IP integers). These assertions protect representation only. They do not change login validation, credential handling, session policy, decoding, or authentication behavior.
 
 ## CI-only integration
 
