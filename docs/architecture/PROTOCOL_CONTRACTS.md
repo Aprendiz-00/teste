@@ -8,7 +8,7 @@ The client/server protocol is binary and depends on the exact in-memory layout o
 
 ## Protected baseline
 
-The first contract set protects the common `_MSG` header and its standard parameter variants:
+The common `_MSG` header and its standard parameter variants are protected:
 
 - `MSG_STANDARD`
 - `MSG_STANDARDPARM`
@@ -16,7 +16,7 @@ The first contract set protects the common `_MSG` header and its standard parame
 - `MSG_STANDARDSHORTPARM2`
 - `MSG_STANDARDPARM3`
 
-It also protects the core direction flags used in message type values.
+The core direction flags used in message type values are also protected.
 
 The common header is expected to remain 12 bytes with these offsets:
 
@@ -28,6 +28,27 @@ The common header is expected to remain 12 bytes with these offsets:
 | `Type` | 4 |
 | `ID` | 6 |
 | `ClientTick` | 8 |
+
+## Account login contract
+
+The packed client-to-game account login packet is also protected before any authentication/network extraction work.
+
+Current Win32 contract:
+
+- packet type `_MSG_AccountLogin`: `0x020D`;
+- confirmation type `_MSG_CNFAccountLogin`: `0x010A`;
+- account password field: 12 bytes;
+- account login field: 16 bytes;
+- `MSG_AccountLogin` total size: 116 bytes;
+- `AccountPassword` offset: 12;
+- `AccountLogin` offset: 24;
+- `MacAddres` offset: 40;
+- `Zero` offset: 58;
+- `Version` offset: 92;
+- `DBNeedSave` offset: 96;
+- `IP` offset: 100.
+
+The total size includes the legacy tail fields after the MAC address (`Zero[34]`, version/save flags and four IP integers). These assertions protect representation only. They do not change login validation, credential handling, session policy, decoding, or authentication behavior.
 
 ## CI-only integration
 
@@ -47,4 +68,4 @@ The expected values should never be updated merely to make CI green.
 
 ## Next expansion
 
-Additional contracts should be added incrementally for packed login messages and other high-risk client/game/database packets after their current layouts are verified on the Win32 build target.
+Additional contracts should be added incrementally for other generic login/session messages and high-risk client/game/database packets after their current layouts are verified on the Win32 build target.
