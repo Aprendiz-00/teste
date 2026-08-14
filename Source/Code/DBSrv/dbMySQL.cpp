@@ -19,6 +19,11 @@ MYSQL* cSQL::wStart()
 {
 
 	MYSQL* wSQL = mysql_init(NULL);
+	if (wSQL == NULL)
+	{
+		printf("[dbMySQL][DBSRV] Falha ao inicializar o cliente MySQL.\n");
+		return NULL;
+	}
 
 	try
 	{
@@ -46,20 +51,24 @@ MYSQL* cSQL::wStart()
 			NULL,
 			0))
 		{
-			printf("[wMySQL][TMSVR] Ocorreu um erro na conexão.\n\t\tErro: %s\n", mysql_error(wSQL));
-			return wSQL;
+			printf("[dbMySQL][DBSRV] Ocorreu um erro na conexão.\n\t\tErro: %s\n", mysql_error(wSQL));
+			mysql_close(wSQL);
+			return NULL;
 		}
 
 		return wSQL;
 	}
 	catch (...)
 	{
-		return wSQL;
+		mysql_close(wSQL);
+		return NULL;
 	}
 }
 
 MYSQL_RES* cSQL::wRes(MYSQL* sql, char* query)
 {
+	if (sql == NULL || query == NULL)
+		return NULL;
 
 	try {
 		if (mysql_query(sql, query))
@@ -82,6 +91,7 @@ MYSQL_RES* cSQL::wRes(MYSQL* sql, char* query)
 	}
 	catch (...)
 	{
+		mysql_close(sql);
 		return NULL;
 	}
 }
@@ -102,6 +112,11 @@ void cSQL::wLog(char* acc, char* pers, char* mensagem, char* type)
 	auto& pc = cSQL::instance();
 
 	MYSQL* wSQL = pc.wStart();
+	if (wSQL == NULL)
+	{
+		printf("[dbMySQL][Log] Conexão MySQL indisponível.\n");
+		return;
+	}
 
 	if (mysql_query(wSQL, xQuery))
 	{
@@ -120,11 +135,16 @@ void cSQL::wLog(char* acc, char* pers, char* mensagem, char* type)
 /// Executes a query.
 bool cSQL::wQuery(char* query)
 {
+	if (query == NULL)
+		return FALSE;
+
 	try
 	{
 		auto& pc = cSQL::instance();
 
 		MYSQL* wSQL = pc.wStart();
+		if (wSQL == NULL)
+			return FALSE;
 
 		if (mysql_query(wSQL, query))
 		{
