@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'TMSrv' Or '$(MSBuildProjectName)' == 'DBSrv'">
+    <WydMySqlIncludeDir>$(MSBuildThisFileDirectory)include_mysql</WydMySqlIncludeDir>
+    <WydLegacyDefaultOutDir>$(MSBuildThisFileDirectory)..\..\Server\$(MSBuildProjectName)\run\</WydLegacyDefaultOutDir>
+    <OutDir Condition="'$(WYD_LEGACY_OUT_DIR)' == ''">$(WydLegacyDefaultOutDir)</OutDir>
+    <OutDir Condition="'$(WYD_LEGACY_OUT_DIR)' != ''">$(WYD_LEGACY_OUT_DIR)\$(MSBuildProjectName)\run\</OutDir>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup Condition="'$(MSBuildProjectName)' == 'TMSrv' Or '$(MSBuildProjectName)' == 'DBSrv'">
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(WydMySqlIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories Condition="'$(WYD_MYSQL_LIB_DIR)' != ''">$(WYD_MYSQL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>
