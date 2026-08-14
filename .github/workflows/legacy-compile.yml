@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'Source/Code/**'
+      - 'Source/Modern/Protocol/**'
       - 'tools/build/**'
       - '.github/workflows/legacy-compile.yml'
   push:
@@ -11,8 +12,10 @@ on:
       - main
       - 'build/**'
       - 'persistence/**'
+      - 'protocol/**'
     paths:
       - 'Source/Code/**'
+      - 'Source/Modern/Protocol/**'
       - 'tools/build/**'
       - '.github/workflows/legacy-compile.yml'
 
@@ -35,4 +38,6 @@ jobs:
 
       - name: Compile TMSrv and DBSrv without link
         shell: pwsh
+        env:
+          WYD_ENABLE_PROTOCOL_CONTRACTS: 'true'
         run: ./tools/build/Build-Legacy.ps1 -Configuration Release -Project All -CompileOnly
