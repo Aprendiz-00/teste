@@ -30,20 +30,64 @@ function Publish-BuildDiagnostics([string]$ProjectName, [object[]]$BuildOutput) 
     }
 }
 
-function New-CompatibilityProjectCopy([string]$ProjectPath, [string]$ProjectName) {
+function New-BasedefCompatibilityCopy([string]$SourcePath) {
+    $targetLine = 6224
+    $bytes = [System.IO.File]::ReadAllBytes($SourcePath)
+    $lineNumber = 1
+    $lineStart = 0
+    $lineEnd = -1
+
+    for ($i = 0; $i -lt $bytes.Length; $i++) {
+        if ($lineNumber -eq $targetLine -and $bytes[$i] -eq 10) {
+            $lineEnd = $i
+            break
+        }
+        if ($bytes[$i] -eq 10) {
+            $lineNumber++
+            $lineStart = $i + 1
+        }
+    }
+
+    if ($lineEnd -lt 0 -or $lineNumber -ne $targetLine) {
+        throw "Unable to locate Basedef.cpp line $targetLine for compatibility sanitization."
+    }
+
+    $replacement = [System.Text.Encoding]::ASCII.GetBytes("`t`t`tMessageBox(NULL, temp, `"Effect.h define value is not numeric or outside the valid range`", MB_OK);")
+    $temporaryPath = Join-Path (Split-Path $SourcePath -Parent) 'Basedef.ci.cpp'
+    $stream = New-Object System.IO.MemoryStream
+    try {
+        $stream.Write($bytes, 0, $lineStart)
+        $stream.Write($replacement, 0, $replacement.Length)
+        $stream.WriteByte(10)
+        $suffixStart = $lineEnd + 1
+        if ($suffixStart -lt $bytes.Length) {
+            $stream.Write($bytes, $suffixStart, $bytes.Length - $suffixStart)
+        }
+        [System.IO.File]::WriteAllBytes($temporaryPath, $stream.ToArray())
+    }
+    finally {
+        $stream.Dispose()
+    }
+
+    Write-Host '[legacy] generated Basedef.ci.cpp with one diagnostics-only string normalized to ASCII.'
+    return $temporaryPath
+}
+
+function New-CompatibilityProjectCopy([string]$ProjectPath, [string]$ProjectName, [string]$BasedefCompatibilityPath) {
     [xml]$projectXml = Get-Content -Raw $ProjectPath
     $namespace = $projectXml.Project.NamespaceURI
     $manager = New-Object System.Xml.XmlNamespaceManager($projectXml.NameTable)
     $manager.AddNamespace('msb', $namespace)
-
     $compileNodes = @($projectXml.SelectNodes('//msb:ClCompile', $manager))
     if ($compileNodes.Count -eq 0) { throw "No ClCompile items found in $ProjectName." }
 
     foreach ($node in $compileNodes) {
         $include = $node.GetAttribute('Include')
-        # Basedef.cpp contains historical Korean/CP949 source bytes; the active
-        # TMSrv/DBSrv sources are UTF-8. Keep this exception isolated here.
-        $sourceCharset = if ($include -eq '..\Basedef.cpp') { '949' } else { 'utf-8' }
+        $sourceCharset = 'utf-8'
+        if ($include -eq '..\Basedef.cpp') {
+            $node.SetAttribute('Include', '..\Basedef.ci.cpp')
+            $sourceCharset = '949'
+        }
         $options = $projectXml.CreateElement('AdditionalOptions', $namespace)
         $options.InnerText = "/source-charset:$sourceCharset %(AdditionalOptions)"
         [void]$node.AppendChild($options)
@@ -51,7 +95,7 @@ function New-CompatibilityProjectCopy([string]$ProjectPath, [string]$ProjectName
 
     $temporaryPath = Join-Path (Split-Path $ProjectPath -Parent) "$ProjectName.ci.vcxproj"
     $projectXml.Save($temporaryPath)
-    Write-Host "[$ProjectName] generated compatibility project with explicit per-file source charsets."
+    Write-Host "[$ProjectName] generated compatibility project with explicit source charsets."
     return $temporaryPath
 }
 
@@ -59,7 +103,9 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
 $sourceRoot = Join-Path $repoRoot 'Source'
 $buildRoot = Join-Path $repoRoot "out/legacy/$Configuration"
 $mysqlIncludeDir = Join-Path $sourceRoot 'Code/include_mysql'
+$basedefPath = Join-Path $sourceRoot 'Code/Basedef.cpp'
 if (-not (Test-Path (Join-Path $mysqlIncludeDir 'mysql.h'))) { throw "Vendored MySQL headers not found: $mysqlIncludeDir" }
+if (-not (Test-Path $basedefPath)) { throw "Basedef.cpp not found: $basedefPath" }
 
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
 if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
@@ -78,6 +124,7 @@ $originalLib = $env:LIB
 $originalInclude = $env:INCLUDE
 $originalCl = $env:CL
 $temporaryProjects = @()
+$basedefCompatibilityPath = $null
 
 $env:INCLUDE = if ([string]::IsNullOrWhiteSpace($originalInclude)) { $mysqlIncludeDir } else { "$mysqlIncludeDir;$originalInclude" }
 $requiredCompilerOptions = "/std:c++17 /execution-charset:utf-8 /I`"$mysqlIncludeDir`""
@@ -91,8 +138,9 @@ if (-not $CompileOnly) {
 }
 
 try {
+    $basedefCompatibilityPath = New-BasedefCompatibilityCopy $basedefPath
     foreach ($entry in $projects) {
-        $projectPath = New-CompatibilityProjectCopy $entry.Path $entry.Name
+        $projectPath = New-CompatibilityProjectCopy $entry.Path $entry.Name $basedefCompatibilityPath
         $temporaryProjects += $projectPath
         $outDir = Join-Path $buildRoot "$($entry.Name)/run"
         $intDir = Join-Path $buildRoot "obj/$($entry.Name)"
@@ -111,6 +159,7 @@ try {
 finally {
     $env:LIB = $originalLib; $env:INCLUDE = $originalInclude; $env:CL = $originalCl
     foreach ($temporaryProject in $temporaryProjects) { Remove-Item -Force $temporaryProject -ErrorAction SilentlyContinue }
+    if ($null -ne $basedefCompatibilityPath) { Remove-Item -Force $basedefCompatibilityPath -ErrorAction SilentlyContinue }
 }
 
 if ($CompileOnly) { Write-Host 'Legacy compile-only gate completed; link intentionally skipped.' } else { Write-Host 'Legacy build completed.' }
