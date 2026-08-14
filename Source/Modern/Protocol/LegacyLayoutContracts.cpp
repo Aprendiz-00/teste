@@ -41,7 +41,7 @@ namespace wyd::protocol::contracts
     static_assert(_MSG_AccountLogin == 0x020D, "Account login packet type changed.");
     static_assert(_MSG_CNFAccountLogin == 0x010A, "Account login confirmation packet type changed.");
 
-    static_assert(sizeof(MSG_AccountLogin) == 58, "MSG_AccountLogin wire size changed.");
+    static_assert(sizeof(MSG_AccountLogin) == 116, "MSG_AccountLogin wire size changed.");
     static_assert(offsetof(MSG_AccountLogin, Size) == 0, "MSG_AccountLogin::Size offset changed.");
     static_assert(offsetof(MSG_AccountLogin, Type) == 4, "MSG_AccountLogin::Type offset changed.");
     static_assert(offsetof(MSG_AccountLogin, ID) == 6, "MSG_AccountLogin::ID offset changed.");
@@ -49,4 +49,8 @@ namespace wyd::protocol::contracts
     static_assert(offsetof(MSG_AccountLogin, AccountPassword) == 12, "MSG_AccountLogin::AccountPassword offset changed.");
     static_assert(offsetof(MSG_AccountLogin, AccountLogin) == 24, "MSG_AccountLogin::AccountLogin offset changed.");
     static_assert(offsetof(MSG_AccountLogin, MacAddres) == 40, "MSG_AccountLogin::MacAddres offset changed.");
+    static_assert(offsetof(MSG_AccountLogin, Zero) == 58, "MSG_AccountLogin::Zero offset changed.");
+    static_assert(offsetof(MSG_AccountLogin, Version) == 92, "MSG_AccountLogin::Version offset changed.");
+    static_assert(offsetof(MSG_AccountLogin, DBNeedSave) == 96, "MSG_AccountLogin::DBNeedSave offset changed.");
+    static_assert(offsetof(MSG_AccountLogin, IP) == 100, "MSG_AccountLogin::IP offset changed.");
 }
