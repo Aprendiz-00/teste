@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'Source/Code/**'
-      - 'tools/build/Build-Legacy.ps1'
+      - 'tools/build/**'
       - '.github/workflows/legacy-compile.yml'
   push:
     branches:
@@ -13,7 +13,7 @@ on:
       - 'persistence/**'
     paths:
       - 'Source/Code/**'
-      - 'tools/build/Build-Legacy.ps1'
+      - 'tools/build/**'
       - '.github/workflows/legacy-compile.yml'
 
 permissions:
@@ -33,10 +33,12 @@ jobs:
             Source
             tools/build
 
+      - name: Normalize parser-only legacy source tokens
+        shell: pwsh
+        run: ./tools/build/Normalize-LegacyCiSources.ps1
+
       - name: Compile TMSrv and DBSrv without link
         shell: pwsh
         env:
-          # Compile translation units in parallel while preserving the same
-          # Release/Win32 preprocessor and project configuration.
           CL: /MP /FS
         run: ./tools/build/Build-Legacy.ps1 -Configuration Release -Project All -CompileOnly
