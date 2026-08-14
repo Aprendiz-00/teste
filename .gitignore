@@ -1,0 +1,44 @@
+# Modern build outputs
+/build/
+/out/
+/cmake-build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+cmake_install.cmake
+compile_commands.json
+
+# IDE / editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Native build artifacts
+*.obj
+*.o
+*.ilk
+*.exp
+*.iobj
+*.ipdb
+
+# Test outputs
+Testing/
+
+# Local configuration / secrets
+.env
+.env.*
+!.env.example
+config/*.local.*
+secrets/
+
+# Logs / crash dumps generated locally
+*.log
+*.dmp
+
+# OS
+Thumbs.db
+.DS_Store
