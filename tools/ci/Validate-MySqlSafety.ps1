@@ -18,7 +18,10 @@ foreach ($file in $files) {
         throw "MYSQL_OPT_CONNECT_TIMEOUT still receives a string pointer in: $file"
     }
 
-    if ($content -match 'char\s+res\s*\[\s*1000\s*\]\s*;') {
+    # Match only a plain local declaration beginning the line. The intended
+    # compatibility buffer is explicitly `static thread_local` and must not
+    # be rejected by this invariant.
+    if ($content -match '(?m)^\s*char\s+res\s*\[\s*1000\s*\]\s*;') {
         throw "wInfo still contains a stack-local result buffer in: $file"
     }
 
