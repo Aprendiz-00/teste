@@ -22,13 +22,15 @@ MYSQL* cSQL::wStart()
 	try
 	{
 		my_bool reconnect = 1;
+		unsigned int connectTimeoutSeconds = 300;
+
 		mysql_options(wSQL, MYSQL_OPT_RECONNECT, &reconnect);
 		mysql_options(wSQL, MYSQL_OPT_COMPRESS, 0);
-		mysql_options(wSQL, MYSQL_OPT_CONNECT_TIMEOUT, "300");
+		mysql_options(wSQL, MYSQL_OPT_CONNECT_TIMEOUT, &connectTimeoutSeconds);
 
 		if (!mysql_real_connect(wSQL, HOST, USER, PASS, DB, PORT, NULL, 0))
 		{
-			printf("[wMySQL][TMSVR] Ocorreu um erro na conex„o.\n\t\tErro: %s\n", mysql_error(wSQL));
+			printf("[wMySQL][TMSVR] Ocorreu um erro na conex√£o.\n\t\tErro: %s\n", mysql_error(wSQL));
 			return wSQL;
 		}
 
@@ -46,13 +48,15 @@ MYSQL_RES* cSQL::wRes(MYSQL* sql, char* query)
 	try {
 		if (mysql_query(sql, query))
 		{
-			printf("[dbMySQL][wRes] Erro na execuÁ„o da wRes.\n\t\tErro: %s\n", mysql_error(sql));
+			printf("[dbMySQL][wRes] Erro na execu√ß√£o da wRes.\n\t\tErro: %s\n", mysql_error(sql));
 			mysql_close(sql);
 			return NULL;
 		}
 
 		MYSQL_RES* result = mysql_store_result(sql);
 
+		// Legacy ownership contract: wRes closes the MYSQL connection and
+		// transfers ownership of the buffered MYSQL_RES to the caller.
 		mysql_close(sql);
 
 		if (result)
@@ -87,7 +91,7 @@ void cSQL::wLog(char* acc, char* pers, char* mensagem, char* type)
 
 	if (mysql_query(wSQL, xQuery))
 	{
-		printf("[dbMySQL][Log] Erro na execuÁ„o da wQuery.\n\t\tErro: %s\n", mysql_error(wSQL));
+		printf("[dbMySQL][Log] Erro na execu√ß√£o da wQuery.\n\t\tErro: %s\n", mysql_error(wSQL));
 		mysql_close(wSQL);
 		//ExitThread(0);
 		return;
@@ -110,7 +114,7 @@ bool cSQL::wQuery(char* query)
 
 		if (mysql_query(wSQL, query))
 		{
-			printf("[dbMySQL][wQuery] Erro na execuÁ„o da wQuery.\n\t\tErro: %s\n", mysql_error(wSQL));
+			printf("[dbMySQL][wQuery] Erro na execu√ß√£o da wQuery.\n\t\tErro: %s\n", mysql_error(wSQL));
 			mysql_close(wSQL);
 			//ExitThread(0);
 			return FALSE;
@@ -138,16 +142,12 @@ int cSQL::Cont(char* query)
 	if (result == NULL)
 	{
 		printf("[dbMySQL][wInfo]: Ocorreu um erro ao retornar Dados.\n");
-		//mysql_free_result(sq.result);
-		//mysql_close(sq.wSQL);
 		return res;
 	}
-
 
 	res = (int)mysql_num_rows(result);
 
 	mysql_free_result(result);
-	mysql_close(wSQL);
 	return res;
 }
 
@@ -164,24 +164,22 @@ int cSQL::iInfo(char* query)
 	if (result == NULL)
 	{
 		printf("[dbMySQL][wInfo]: Ocorreu um erro ao retornar Dados.\n");
-		//mysql_free_result(sq.result);
-		//mysql_close(sq.wSQL);
 		return res;
 	}
-
 
 	while ((row = mysql_fetch_row(result)) != NULL)
 		res = atoi(row[0]);
 
 	mysql_free_result(result);
-	mysql_close(wSQL);
 	return res;
 }
 
 char* cSQL::wInfo(char* query)
 {
-	char res[1000];
-	memset(res, 0, sizeof(char));
+	static thread_local char res[1000];
+	static char noResult[] = "0";
+
+	memset(res, 0, sizeof(res));
 
 	MYSQL_ROW row;
 
@@ -193,19 +191,20 @@ char* cSQL::wInfo(char* query)
 	if (result == NULL)
 	{
 		printf("[dbMySQL][wInfo]: Ocorreu um erro ao retornar Dados.\n");
-		//mysql_free_result(sq.result);
-		//mysql_close(sq.wSQL);
-		return "0";
+		return noResult;
 	}
 
-
 	while ((row = mysql_fetch_row(result)) != NULL)
-		strcpy(res, row[0]);
+	{
+		if (row[0] == NULL)
+			continue;
+
+		strncpy(res, row[0], sizeof(res) - 1);
+		res[sizeof(res) - 1] = 0;
+	}
 
 	mysql_free_result(result);
-	mysql_close(wSQL);
 	return res;
-
 }
 
 char* rcIP(unsigned int mIP)

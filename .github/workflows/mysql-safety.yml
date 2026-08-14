@@ -1,0 +1,37 @@
+name: MySQL Safety Baseline
+
+on:
+  pull_request:
+    paths:
+      - 'Source/Code/TMSrv/wMySQL.cpp'
+      - 'Source/Code/TMSrv/wMySQL.h'
+      - 'Source/Code/DBSrv/dbMySQL.cpp'
+      - 'Source/Code/DBSrv/dbMySQL.h'
+      - 'tools/ci/Validate-MySqlSafety.ps1'
+      - '.github/workflows/mysql-safety.yml'
+  push:
+    branches:
+      - main
+      - 'persistence/**'
+    paths:
+      - 'Source/Code/TMSrv/wMySQL.cpp'
+      - 'Source/Code/TMSrv/wMySQL.h'
+      - 'Source/Code/DBSrv/dbMySQL.cpp'
+      - 'Source/Code/DBSrv/dbMySQL.h'
+      - 'tools/ci/Validate-MySqlSafety.ps1'
+      - '.github/workflows/mysql-safety.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-safety-invariants:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate legacy MySQL safety invariants
+        shell: pwsh
+        run: ./tools/ci/Validate-MySqlSafety.ps1
