@@ -48,7 +48,25 @@ Current Win32 contract:
 - `DBNeedSave` offset: 96;
 - `IP` offset: 100.
 
-The total size includes the legacy tail fields after the MAC address (`Zero[34]`, version/save flags and four IP integers). These assertions protect representation only. They do not change login validation, credential handling, session policy, decoding, or authentication behavior.
+The total size includes the legacy tail fields after the MAC address (`Zero[34]`, version/save flags and four IP integers).
+
+## Primary-account session contracts
+
+The lightweight DB/game primary-account messages are protected because they carry the account identifier, MAC and four legacy IP integers used during session ownership checks.
+
+Current Win32 contracts:
+
+- `_MSG_DBCheckPrimaryAccount`: `0x0414`;
+- `_MSG_DBPrimaryAccount`: `0x0817`;
+- both structures: 64 bytes;
+- `AccountName` offset: 12;
+- `MacAddres` offset: 28;
+- 2 bytes of ABI padding follow the 18-byte MAC field;
+- `IP` offset: 48.
+
+Unlike `MSG_AccountLogin`, these two DB/game structures are not declared inside a `#pragma pack(1)` region. The padding before `unsigned int IP[4]` is therefore part of the current Win32 wire ABI and is intentionally protected.
+
+These assertions protect representation only. They do not change login validation, credential handling, session ownership policy, decoding, authentication behavior or connection rules.
 
 ## CI-only integration
 
