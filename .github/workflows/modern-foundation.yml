@@ -1,0 +1,45 @@
+name: Modern Foundation CI
+
+on:
+  pull_request:
+    paths:
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'Source/Modern/**'
+      - 'tests/**'
+      - '.github/workflows/modern-foundation.yml'
+  push:
+    branches:
+      - main
+      - 'architecture/**'
+    paths:
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'Source/Modern/**'
+      - 'tests/**'
+      - '.github/workflows/modern-foundation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure modern components
+        run: cmake -S . -B out/ci -DWYD_BUILD_MODERN_TESTS=ON
+
+      - name: Build modern components
+        run: cmake --build out/ci --config Debug --parallel
+
+      - name: Test modern components
+        run: ctest --test-dir out/ci -C Debug --output-on-failure
