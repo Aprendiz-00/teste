@@ -13,15 +13,11 @@ Set-StrictMode -Version Latest
 
 function ConvertTo-GitHubCommandValue {
     param([string]$Value)
-
     return $Value.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
 }
 
 function Publish-BuildDiagnostics {
-    param(
-        [string]$ProjectName,
-        [object[]]$BuildOutput
-    )
+    param([string]$ProjectName, [object[]]$BuildOutput)
 
     $lines = @($BuildOutput | ForEach-Object { $_.ToString() })
     $diagnostics = @(
@@ -38,18 +34,43 @@ function Publish-BuildDiagnostics {
     }
 
     foreach ($line in $diagnostics) {
-        $escaped = ConvertTo-GitHubCommandValue -Value $line
-        Write-Host "::error title=$ProjectName legacy compile::$escaped"
+        Write-Host "::error title=$ProjectName legacy compile::$(ConvertTo-GitHubCommandValue $line)"
     }
 
     if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_STEP_SUMMARY)) {
-        Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### $ProjectName legacy build diagnostics"
-        Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```text'
-        foreach ($line in $diagnostics) {
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $line
-        }
-        Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```'
+        Add-Content $env:GITHUB_STEP_SUMMARY "### $ProjectName legacy build diagnostics"
+        Add-Content $env:GITHUB_STEP_SUMMARY '```text'
+        $diagnostics | ForEach-Object { Add-Content $env:GITHUB_STEP_SUMMARY $_ }
+        Add-Content $env:GITHUB_STEP_SUMMARY '```'
     }
+}
+
+function New-CompatibilityProjectCopy {
+    param([string]$ProjectPath, [string]$ProjectName)
+
+    if ($ProjectName -ne 'TMSrv') {
+        return $ProjectPath
+    }
+
+    [xml]$projectXml = Get-Content -Raw $ProjectPath
+    $namespace = $projectXml.Project.NamespaceURI
+    $manager = New-Object System.Xml.XmlNamespaceManager($projectXml.NameTable)
+    $manager.AddNamespace('msb', $namespace)
+
+    $baseDefNode = $projectXml.SelectSingleNode("//msb:ClCompile[@Include='..\Basedef.cpp']", $manager)
+    if ($null -eq $baseDefNode) {
+        throw 'Unable to find Basedef.cpp in TMSrv project while preparing compatibility metadata.'
+    }
+
+    $additionalOptions = $projectXml.CreateElement('AdditionalOptions', $namespace)
+    $additionalOptions.InnerText = '/source-charset:.1252 %(AdditionalOptions)'
+    [void]$baseDefNode.AppendChild($additionalOptions)
+
+    $temporaryPath = Join-Path (Split-Path $ProjectPath -Parent) 'TMSrv.ci.vcxproj'
+    $projectXml.Save($temporaryPath)
+
+    Write-Host '[TMSrv] Basedef.cpp uses source charset 1252 in the clean-runner compatibility project.'
+    return $temporaryPath
 }
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
@@ -63,7 +84,7 @@ if (-not (Test-Path (Join-Path $mysqlIncludeDir 'mysql.h'))) {
 
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
 if (-not (Test-Path $vswhere)) {
-    throw "vswhere.exe not found. Install Visual Studio/Build Tools with the Desktop development with C++ workload."
+    throw 'vswhere.exe not found. Install Visual Studio/Build Tools with the C++ workload.'
 }
 
 $installationPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
@@ -73,21 +94,15 @@ if ([string]::IsNullOrWhiteSpace($installationPath)) {
 
 $msbuild = Join-Path $installationPath 'MSBuild/Current/Bin/MSBuild.exe'
 if (-not (Test-Path $msbuild)) {
-    throw "MSBuild.exe not found at expected path: $msbuild"
+    throw "MSBuild.exe not found: $msbuild"
 }
 
 $projects = @()
 if ($Project -eq 'TMSrv' -or $Project -eq 'All') {
-    $projects += @{
-        Name = 'TMSrv'
-        Path = (Join-Path $sourceRoot 'Code/TMSrv/TMSrv.vcxproj')
-    }
+    $projects += @{ Name = 'TMSrv'; Path = (Join-Path $sourceRoot 'Code/TMSrv/TMSrv.vcxproj') }
 }
 if ($Project -eq 'DBSrv' -or $Project -eq 'All') {
-    $projects += @{
-        Name = 'DBSrv'
-        Path = (Join-Path $sourceRoot 'Code/DBSrv/DBSrv.vcxproj')
-    }
+    $projects += @{ Name = 'DBSrv'; Path = (Join-Path $sourceRoot 'Code/DBSrv/DBSrv.vcxproj') }
 }
 
 foreach ($entry in $projects) {
@@ -97,10 +112,10 @@ foreach ($entry in $projects) {
 }
 
 $target = if ($CompileOnly) { 'ClCompile' } else { 'Build' }
-
 $originalLib = $env:LIB
 $originalInclude = $env:INCLUDE
 $originalCl = $env:CL
+$temporaryProjects = @()
 
 $env:INCLUDE = if ([string]::IsNullOrWhiteSpace($originalInclude)) {
     $mysqlIncludeDir
@@ -108,12 +123,10 @@ $env:INCLUDE = if ([string]::IsNullOrWhiteSpace($originalInclude)) {
     "$mysqlIncludeDir;$originalInclude"
 }
 
-# The compatibility layer requires C++17. The legacy source tree contains a
-# mix of historical encodings, so the compile gate intentionally keeps the
-# MSVC default source codepage instead of forcing /utf-8 globally. Active C++
-# identifiers are normalized to ASCII as they are encountered; a dedicated
-# source-encoding normalization pass will follow after the clean compile gate.
-$requiredCompilerOptions = '/std:c++17'
+# Most active source files are UTF-8. A small amount of historical common code
+# still uses a legacy codepage; the temporary MSBuild compatibility project
+# applies a per-file source charset only to that known translation unit.
+$requiredCompilerOptions = "/std:c++17 /utf-8 /I`"$mysqlIncludeDir`""
 $env:CL = if ([string]::IsNullOrWhiteSpace($originalCl)) {
     $requiredCompilerOptions
 } else {
@@ -139,17 +152,22 @@ if (-not $CompileOnly) {
 
 try {
     foreach ($entry in $projects) {
+        $projectPath = New-CompatibilityProjectCopy -ProjectPath $entry.Path -ProjectName $entry.Name
+        if ($projectPath -ne $entry.Path) {
+            $temporaryProjects += $projectPath
+        }
+
         $outDir = Join-Path $buildRoot "$($entry.Name)/run"
         $intDir = Join-Path $buildRoot "obj/$($entry.Name)"
         New-Item -ItemType Directory -Force -Path $outDir | Out-Null
         New-Item -ItemType Directory -Force -Path $intDir | Out-Null
 
-        Write-Host "[$($entry.Name)] MSBuild target=$target configuration=$Configuration platform=Win32"
+        Write-Host "[$($entry.Name)] target=$target configuration=$Configuration platform=Win32"
         Write-Host "[$($entry.Name)] MySQL include root: $mysqlIncludeDir"
-        Write-Host "[$($entry.Name)] Required compiler options: $requiredCompilerOptions"
+        Write-Host "[$($entry.Name)] compiler options: $requiredCompilerOptions"
 
         $arguments = @(
-            $entry.Path,
+            $projectPath,
             "/t:$target",
             "/p:Configuration=$Configuration",
             '/p:Platform=Win32',
@@ -162,10 +180,7 @@ try {
 
         $buildOutput = @(& $msbuild @arguments 2>&1)
         $exitCode = $LASTEXITCODE
-
-        foreach ($line in $buildOutput) {
-            Write-Host $line
-        }
+        $buildOutput | ForEach-Object { Write-Host $_ }
 
         if ($exitCode -ne 0) {
             Publish-BuildDiagnostics -ProjectName $entry.Name -BuildOutput $buildOutput
@@ -177,6 +192,10 @@ finally {
     $env:LIB = $originalLib
     $env:INCLUDE = $originalInclude
     $env:CL = $originalCl
+
+    foreach ($temporaryProject in $temporaryProjects) {
+        Remove-Item -Force $temporaryProject -ErrorAction SilentlyContinue
+    }
 }
 
 if ($CompileOnly) {
