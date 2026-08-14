@@ -2,23 +2,27 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <string>
 
 namespace wyd::platform::database
 {
 	struct DatabaseConfig
 	{
-		const char* host;
-		const char* user;
-		const char* password;
-		const char* database;
+		std::string host;
+		std::string user;
+		std::string password;
+		std::string database;
 		unsigned int port;
 		unsigned int connectTimeoutSeconds;
 	};
 
-	inline const char* EnvironmentOrDefault(const char* name, const char* fallback) noexcept
+	inline std::string EnvironmentOrDefault(const char* name, const char* fallback)
 	{
 		const char* value = std::getenv(name);
-		return value != nullptr && value[0] != '\0' ? value : fallback;
+		if (value != nullptr && value[0] != '\0')
+			return value;
+
+		return fallback != nullptr ? fallback : "";
 	}
 
 	inline unsigned int ParseBoundedUnsignedOrDefault(
@@ -49,7 +53,7 @@ namespace wyd::platform::database
 		const char* defaultPassword,
 		const char* defaultDatabase,
 		unsigned int defaultPort,
-		unsigned int defaultConnectTimeoutSeconds) noexcept
+		unsigned int defaultConnectTimeoutSeconds)
 	{
 		DatabaseConfig config{};
 
