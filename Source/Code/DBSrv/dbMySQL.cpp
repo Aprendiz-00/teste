@@ -38,10 +38,10 @@ MYSQL* cSQL::wStart()
 
 		if (!mysql_real_connect(
 			wSQL,
-			config.host,
-			config.user,
-			config.password,
-			config.database,
+			config.host.c_str(),
+			config.user.c_str(),
+			config.password.c_str(),
+			config.database.c_str(),
 			config.port,
 			NULL,
 			0))
@@ -85,8 +85,6 @@ MYSQL_RES* cSQL::wRes(MYSQL* sql, char* query)
 		return NULL;
 	}
 }
-
-
 
 void cSQL::wLog(char* acc, char* pers, char* mensagem, char* type)
 {
@@ -145,7 +143,6 @@ bool cSQL::wQuery(char* query)
 		return FALSE;
 	}
 }
-
 
 int cSQL::Cont(char* query)
 {
