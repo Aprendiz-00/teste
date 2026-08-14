@@ -51,6 +51,18 @@ foreach ($file in $sourceFiles) {
             throw "MySQL connection does not use owned config.$field value in: $file"
         }
     }
+
+    if ($content -notmatch '(?s)if\s*\(\s*!mysql_real_connect\s*\(.+?\)\s*\)\s*\{.+?mysql_close\s*\(\s*wSQL\s*\)\s*;\s*return\s+NULL\s*;') {
+        throw "Failed mysql_real_connect path must close wSQL and return NULL in: $file"
+    }
+
+    if ($content -notmatch 'if\s*\(\s*sql\s*==\s*NULL\s*\|\|\s*query\s*==\s*NULL\s*\)\s*\r?\n\s*return\s+NULL\s*;') {
+        throw "wRes must reject null SQL/query inputs before calling the MySQL C API in: $file"
+    }
+
+    if ($content -notmatch 'MYSQL\*\s+wSQL\s*=\s*pc\.wStart\(\)\s*;\s*\r?\n\s*if\s*\(\s*wSQL\s*==\s*NULL\s*\)') {
+        throw "Direct query helpers must guard a failed wStart connection in: $file"
+    }
 }
 
 foreach ($file in $legacyHeaders) {
