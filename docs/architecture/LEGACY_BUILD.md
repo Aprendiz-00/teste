@@ -36,17 +36,26 @@ It provides:
 
 Set `WYD_LEGACY_OUT_DIR` before invoking MSBuild if a different runtime output root is required. The CI wrapper still overrides `OutDir` and `IntDir` so automation remains isolated from runtime directories.
 
-## MySQL headers
+## MySQL dependency contract
 
-TMSrv and DBSrv use the MySQL C API headers from the repository:
+`config/build-dependencies.json` is the source-controlled contract for the legacy MySQL client dependency.
 
-`Source/Code/include_mysql`
+Current baseline:
 
-This removes the requirement to have `MySQL Connector C 6.1/include` installed at a developer-specific path merely to compile.
+- MySQL Connector/C: **6.1.11**;
+- server/protocol header family: **5.7.16**;
+- target architecture: **Win32**;
+- import library: `libmysql.lib`;
+- headers: `Source/Code/include_mysql`;
+- library provisioning: external.
+
+The preflight compares the manifest with `Source/Code/include_mysql/mysql_version.h`. A header/version drift therefore fails CI until the dependency contract is reviewed and updated deliberately.
+
+TMSrv and DBSrv use the MySQL C API headers from the repository, so compiling no longer requires a developer-specific Connector/C include path.
 
 ## Full link
 
-For a full build, provide a **Win32-compatible** `libmysql.lib` directory:
+For a full build, provide a **Connector/C 6.1.11 Win32-compatible** `libmysql.lib` directory:
 
 ```powershell
 $env:WYD_MYSQL_LIB_DIR = 'C:\path\to\mysql\lib'
@@ -55,17 +64,18 @@ $env:WYD_MYSQL_LIB_DIR = 'C:\path\to\mysql\lib'
 
 The wrapper verifies `libmysql.lib` exists before invoking the full `Build` target. The MSBuild policy also exposes the same directory to the linker when projects are built directly from Visual Studio/MSBuild.
 
-The library is intentionally not committed as an opaque binary dependency. A reproducible source/package provenance for the required connector remains a tracked build-hardening item.
+The library is intentionally not committed as an opaque binary dependency. The manifest records the expected ABI/version family, but a fully reproducible external package acquisition plus cryptographic artifact verification still requires a reviewed source/package provenance before deployable binaries can be claimed reproducible.
 
 ## CI
 
-`.github/workflows/legacy-compile.yml` runs the Release/Win32 compile-only gate on Windows.
+`.github/workflows/legacy-compile.yml` runs the Release/Win32 compile-only gate on Windows. `Modern Foundation CI` also runs `Validate-LegacyBuild.ps1`, which checks the dependency manifest and the repository-wide provisioning assumption.
 
-This gate detects:
+The compile gate detects:
 
 - missing headers;
 - C++ syntax/type regressions;
 - MSBuild policy regressions;
+- protocol layout contract regressions;
 - incompatibilities introduced by modern compatibility shims;
 - project/source drift.
 
@@ -75,7 +85,7 @@ It does **not** claim that deployable server binaries were linked.
 
 - old machine-specific values still exist inside some legacy `.vcxproj` files, but the shared MSBuild policy overrides the relevant TMSrv/DBSrv build settings;
 - Release/Debug CRT configuration requires a separate audit;
-- `libmysql.lib` provenance/version must be made reproducible;
+- external `libmysql.lib` acquisition/checksum provenance is not yet automated;
 - solution x64 labels still map to Win32 for multiple legacy projects.
 
 These items are handled separately so build-system cleanup does not silently change runtime behavior.
