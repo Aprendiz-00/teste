@@ -1,8 +1,8 @@
 #include "Platform/Configuration/DatabaseConfig.h"
 
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
+#include <string>
 
 namespace
 {
@@ -17,12 +17,11 @@ namespace
 		}
 	}
 
-	void ExpectString(const char* actual, const char* expected, const char* message)
+	void ExpectString(const std::string& actual, const char* expected, const char* message)
 	{
-		if (actual == nullptr || std::strcmp(actual, expected) != 0)
+		if (actual != expected)
 		{
-			std::cerr << message << ": expected '" << expected << "', got '"
-				<< (actual == nullptr ? "<null>" : actual) << "'\n";
+			std::cerr << message << ": expected '" << expected << "', got '" << actual << "'\n";
 			++failures;
 		}
 	}
