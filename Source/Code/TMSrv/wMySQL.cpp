@@ -1,5 +1,6 @@
 #include "ProcessClientMessage.h"
 #include "wMySQL.h"
+#include "../LegacyDatabaseConfig.h"
 
 HANDLE hThread;
 HANDLE ThreadLog;
@@ -25,13 +26,28 @@ MYSQL* cSQL::wStart()
 	try
 	{
 		my_bool reconnect = 1;
-		unsigned int connectTimeoutSeconds = 300;
+		const auto config = wyd::legacy::database::LoadFromEnvironment(
+			HOST,
+			USER,
+			PASS,
+			DB,
+			PORT,
+			300);
+		unsigned int connectTimeoutSeconds = config.connectTimeoutSeconds;
 
 		mysql_options(wSQL, MYSQL_OPT_RECONNECT, &reconnect);
 		mysql_options(wSQL, MYSQL_OPT_COMPRESS, 0);
 		mysql_options(wSQL, MYSQL_OPT_CONNECT_TIMEOUT, &connectTimeoutSeconds);
 
-		if (!mysql_real_connect(wSQL, HOST, USER, PASS, DB, PORT, NULL, 0))
+		if (!mysql_real_connect(
+			wSQL,
+			config.host.c_str(),
+			config.user.c_str(),
+			config.password.c_str(),
+			config.database.c_str(),
+			config.port,
+			NULL,
+			0))
 		{
 			printf("[wMySQL][TMSVR] Ocorreu um erro na conexão.\n\t\tErro: %s\n", mysql_error(wSQL));
 			return wSQL;
@@ -130,8 +146,6 @@ bool cSQL::wQuery(char* query)
 	}
 }
 
-
-
 int cSQL::Cont(char* query)
 {
 	int res = 0;
@@ -174,7 +188,6 @@ int cSQL::iInfo(char* query)
 	mysql_free_result(result);
 	return res;
 }
-
 
 long long cSQL::lInfo(char* query)
 {
@@ -231,7 +244,6 @@ char *cSQL::wInfo(char* query)
 	mysql_free_result(result);
 	return res;
 }
-
 
 uint32_t convert(const char* name)
 {

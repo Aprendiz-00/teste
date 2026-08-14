@@ -32,6 +32,20 @@ foreach ($file in $files) {
     if ($content -notmatch 'static\s+thread_local\s+char\s+res\s*\[\s*1000\s*\]') {
         throw "Expected thread-local compatibility buffer missing in: $file"
     }
+
+    if ($content -notmatch 'LoadFromEnvironment\s*\(') {
+        throw "MySQL connection does not load the shared environment configuration in: $file"
+    }
+
+    if ($content -match 'mysql_real_connect\s*\(\s*wSQL\s*,\s*HOST\s*,') {
+        throw "MySQL connection bypasses the environment-aware configuration in: $file"
+    }
+
+    foreach ($field in @('host', 'user', 'password', 'database')) {
+        if ($content -notmatch ("config\." + $field + "\.c_str\(\)")) {
+            throw "MySQL connection does not use owned config.$field value in: $file"
+        }
+    }
 }
 
-Write-Host 'Legacy MySQL safety invariants: OK'
+Write-Host 'Legacy MySQL safety and configuration invariants: OK'
