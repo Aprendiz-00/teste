@@ -58,10 +58,13 @@ Current Win32 contracts:
 
 - `_MSG_DBCheckPrimaryAccount`: `0x0414`;
 - `_MSG_DBPrimaryAccount`: `0x0817`;
-- both structures: 62 bytes;
+- both structures: 64 bytes;
 - `AccountName` offset: 12;
 - `MacAddres` offset: 28;
-- `IP` offset: 46.
+- 2 bytes of ABI padding follow the 18-byte MAC field;
+- `IP` offset: 48.
+
+Unlike `MSG_AccountLogin`, these two DB/game structures are not declared inside a `#pragma pack(1)` region. The padding before `unsigned int IP[4]` is therefore part of the current Win32 wire ABI and is intentionally protected.
 
 These assertions protect representation only. They do not change login validation, credential handling, session ownership policy, decoding, authentication behavior or connection rules.
 
