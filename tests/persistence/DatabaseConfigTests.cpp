@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 namespace
@@ -26,6 +27,25 @@ namespace
 		}
 	}
 
+	template <typename Callable>
+	void ExpectRuntimeError(Callable&& callable, const char* message)
+	{
+		try
+		{
+			callable();
+			std::cerr << message << ": expected std::runtime_error\n";
+			++failures;
+		}
+		catch (const std::runtime_error&)
+		{
+		}
+		catch (...)
+		{
+			std::cerr << message << ": unexpected exception type\n";
+			++failures;
+		}
+	}
+
 	void SetEnvironment(const char* name, const char* value)
 	{
 #ifdef _WIN32
@@ -46,6 +66,7 @@ namespace
 
 	void ClearDatabaseEnvironment()
 	{
+		ClearEnvironment("WYD_DB_REQUIRE_ENV");
 		ClearEnvironment("WYD_DB_HOST");
 		ClearEnvironment("WYD_DB_USER");
 		ClearEnvironment("WYD_DB_PASSWORD");
@@ -84,6 +105,19 @@ int main()
 		ExpectEqual(config.port, 3306, "port default");
 		ExpectEqual(config.connectTimeoutSeconds, 300, "timeout default");
 	}
+
+	SetEnvironment("WYD_DB_REQUIRE_ENV", "1");
+	ExpectRuntimeError(
+		[] {
+			(void)LoadFromEnvironment(
+				"legacy-host",
+				"legacy-user",
+				"legacy-pass",
+				"legacy-db",
+				3306,
+				300);
+		},
+		"strict mode rejects missing required environment");
 
 	SetEnvironment("WYD_DB_HOST", "db.internal");
 	SetEnvironment("WYD_DB_USER", "wyd_game");
