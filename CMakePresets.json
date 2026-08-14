@@ -1,0 +1,55 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "modern-debug",
+      "displayName": "Modern components - Debug",
+      "binaryDir": "${sourceDir}/out/build/modern-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "WYD_BUILD_MODERN_TESTS": "ON"
+      }
+    },
+    {
+      "name": "modern-release",
+      "displayName": "Modern components - Release",
+      "binaryDir": "${sourceDir}/out/build/modern-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "WYD_BUILD_MODERN_TESTS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "modern-debug",
+      "configurePreset": "modern-debug"
+    },
+    {
+      "name": "modern-release",
+      "configurePreset": "modern-release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "modern-debug",
+      "configurePreset": "modern-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "modern-release",
+      "configurePreset": "modern-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
