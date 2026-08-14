@@ -1,0 +1,33 @@
+name: Runtime Safety Refinement Applier
+
+on:
+  push:
+    branches:
+      - build/runtime-safety-hotfix
+
+permissions:
+  contents: write
+
+jobs:
+  refine-hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: build/runtime-safety-hotfix
+
+      - name: Apply final refinement
+        run: python tools/build/runtime_safety_refine.py
+
+      - name: Verify and commit refined sources
+        shell: bash
+        run: |
+          rm .github/workflows/runtime-safety-refine.yml tools/build/runtime_safety_refine.py
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Source/Code/TMSrv/Server.cpp .github/workflows/runtime-safety-refine.yml tools/build/runtime_safety_refine.py
+          git diff --cached --check
+          git commit -m "fix: parse legacy quest records atomically"
+          git push origin HEAD:build/runtime-safety-hotfix
