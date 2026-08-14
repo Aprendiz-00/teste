@@ -41,10 +41,10 @@ MYSQL* cSQL::wStart()
 
 		if (!mysql_real_connect(
 			wSQL,
-			config.host,
-			config.user,
-			config.password,
-			config.database,
+			config.host.c_str(),
+			config.user.c_str(),
+			config.password.c_str(),
+			config.database.c_str(),
 			config.port,
 			NULL,
 			0))
@@ -146,8 +146,6 @@ bool cSQL::wQuery(char* query)
 	}
 }
 
-
-
 int cSQL::Cont(char* query)
 {
 	int res = 0;
@@ -190,7 +188,6 @@ int cSQL::iInfo(char* query)
 	mysql_free_result(result);
 	return res;
 }
-
 
 long long cSQL::lInfo(char* query)
 {
@@ -247,7 +244,6 @@ char *cSQL::wInfo(char* query)
 	mysql_free_result(result);
 	return res;
 }
-
 
 uint32_t convert(const char* name)
 {
