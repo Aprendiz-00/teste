@@ -85,6 +85,13 @@ function New-CastleZakumCompatibilityCopy([string]$SourcePath) {
     return $destination
 }
 
+function New-ServerCompatibilityCopy([string]$SourcePath) {
+    $destination = Join-Path (Split-Path $SourcePath -Parent) 'Server.ci.cpp'
+    Replace-LineBytes $SourcePath $destination 6073 "#pragma region Trovao"
+    Write-Host '[legacy] Server.ci.cpp: normalized one non-semantic pragma region label.'
+    return $destination
+}
+
 function New-CompatibilityProjectCopy([string]$ProjectPath, [string]$ProjectName) {
     [xml]$projectXml = Get-Content -Raw $ProjectPath
     $namespace = $projectXml.Project.NamespaceURI
@@ -95,15 +102,18 @@ function New-CompatibilityProjectCopy([string]$ProjectPath, [string]$ProjectName
 
     foreach ($node in $compileNodes) {
         $include = $node.GetAttribute('Include')
-        $sourceCharset = 'utf-8'
+        $sourceCharset = $null
         switch ($include) {
-            '..\Basedef.cpp' { $node.SetAttribute('Include', '..\Basedef.ci.cpp'); $sourceCharset = '949' }
-            'CNPCGene.cpp' { $node.SetAttribute('Include', 'CNPCGene.ci.cpp') }
-            'CCastleZakum.cpp' { $node.SetAttribute('Include', 'CCastleZakum.ci.cpp') }
+            '..\Basedef.cpp' { $node.SetAttribute('Include', '..\Basedef.ci.cpp') }
+            'CNPCGene.cpp' { $node.SetAttribute('Include', 'CNPCGene.ci.cpp'); $sourceCharset = 'utf-8' }
+            'CCastleZakum.cpp' { $node.SetAttribute('Include', 'CCastleZakum.ci.cpp'); $sourceCharset = 'utf-8' }
+            'Server.cpp' { $node.SetAttribute('Include', 'Server.ci.cpp') }
         }
-        $options = $projectXml.CreateElement('AdditionalOptions', $namespace)
-        $options.InnerText = "/source-charset:$sourceCharset %(AdditionalOptions)"
-        [void]$node.AppendChild($options)
+        if (-not [string]::IsNullOrWhiteSpace($sourceCharset)) {
+            $options = $projectXml.CreateElement('AdditionalOptions', $namespace)
+            $options.InnerText = "/source-charset:$sourceCharset %(AdditionalOptions)"
+            [void]$node.AppendChild($options)
+        }
     }
 
     $temporaryPath = Join-Path (Split-Path $ProjectPath -Parent) "$ProjectName.ci.vcxproj"
@@ -132,7 +142,7 @@ $target = if ($CompileOnly) { 'ClCompile' } else { 'Build' }
 $originalLib = $env:LIB; $originalInclude = $env:INCLUDE; $originalCl = $env:CL
 $temporaryPaths = @()
 $env:INCLUDE = if ([string]::IsNullOrWhiteSpace($originalInclude)) { $mysqlIncludeDir } else { "$mysqlIncludeDir;$originalInclude" }
-$requiredCompilerOptions = "/std:c++17 /execution-charset:utf-8 /I`"$mysqlIncludeDir`""
+$requiredCompilerOptions = "/std:c++17 /MP /FS /I`"$mysqlIncludeDir`""
 $env:CL = if ([string]::IsNullOrWhiteSpace($originalCl)) { $requiredCompilerOptions } else { "$requiredCompilerOptions $originalCl" }
 
 if (-not $CompileOnly) {
@@ -146,6 +156,7 @@ try {
     $temporaryPaths += New-BasedefCompatibilityCopy (Join-Path $codeRoot 'Basedef.cpp')
     $temporaryPaths += New-CNPCGeneCompatibilityCopy (Join-Path $codeRoot 'TMSrv/CNPCGene.cpp')
     $temporaryPaths += New-CastleZakumCompatibilityCopy (Join-Path $codeRoot 'TMSrv/CCastleZakum.cpp')
+    $temporaryPaths += New-ServerCompatibilityCopy (Join-Path $codeRoot 'TMSrv/Server.cpp')
 
     foreach ($entry in $projects) {
         $projectPath = New-CompatibilityProjectCopy $entry.Path $entry.Name
