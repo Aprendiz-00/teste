@@ -1559,25 +1559,19 @@ void BASE_ReadQuestDiaria()
 	}
 
 	int count = 0;
+	char line[1024];
 
-	while (count < 7)
+	while (count < 7 && fgets(line, sizeof(line), fp) != NULL)
 	{
 		int value[17] = {};
 
-		const int parsed = fscanf(fp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+		const int parsed = sscanf(line, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
 			&value[0], &value[1], &value[2], &value[3], &value[4], &value[5],
 			&value[6], &value[7], &value[8], &value[9], &value[10], &value[11],
 			&value[12], &value[13], &value[14], &value[15], &value[16]);
 
-		if (parsed == EOF)
-			break;
-
 		if (parsed != 17)
-		{
-			char invalidLine[512];
-			fgets(invalidLine, sizeof(invalidLine), fp);
 			continue;
-		}
 
 		const auto fitsShort = [](int v) { return v >= -32768 && v <= 32767; };
 		const auto fitsByte = [](int v) { return v >= 0 && v <= 255; };
@@ -12049,12 +12043,12 @@ void ReadLevelItemConfig(void)
 			continue;
 
 		Item.sIndex = static_cast<short>(ival1);
-		Item.stEffect[0].cEffect = ival2;
-		Item.stEffect[0].cValue = ival3;
-		Item.stEffect[1].cEffect = ival4;
-		Item.stEffect[1].cValue = ival5;
-		Item.stEffect[2].cEffect = ival6;
-		Item.stEffect[2].cValue = ival7;
+		Item.stEffect[0].cEffect = static_cast<unsigned char>(ival2);
+		Item.stEffect[0].cValue = static_cast<unsigned char>(ival3);
+		Item.stEffect[1].cEffect = static_cast<unsigned char>(ival4);
+		Item.stEffect[1].cValue = static_cast<unsigned char>(ival5);
+		Item.stEffect[2].cEffect = static_cast<unsigned char>(ival6);
+		Item.stEffect[2].cValue = static_cast<unsigned char>(ival7);
 
 		if (cls == 4 && type != 4)//Item para todas as classes mais n�o para todas build
 		{
