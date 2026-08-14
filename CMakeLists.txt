@@ -38,6 +38,19 @@ if(WYD_BUILD_MODERN_TESTS)
         NAME modern_foundation_sanity
         COMMAND modern_foundation_tests
     )
+
+    add_executable(database_config_tests
+        tests/persistence/DatabaseConfigTests.cpp
+    )
+
+    target_link_libraries(database_config_tests
+        PRIVATE wyd_modern_foundation
+    )
+
+    add_test(
+        NAME database_configuration
+        COMMAND database_config_tests
+    )
 endif()
 
 message(STATUS "Legacy TMSrv/DBSrv remain on the Visual Studio solution during the migration.")
