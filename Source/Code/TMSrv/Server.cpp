@@ -1560,22 +1560,58 @@ void BASE_ReadQuestDiaria()
 
 	int count = 0;
 
-	while (fscanf(fp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-		&QuestDiaria[count].IndexQuest,
-		&QuestDiaria[count].Nivel,
-		&QuestDiaria[count].IdMob1, &QuestDiaria[count].QtdMob1,
-		&QuestDiaria[count].IdMob2, &QuestDiaria[count].QtdMob2,
-		&QuestDiaria[count].IdMob3, &QuestDiaria[count].QtdMob3,
-		&QuestDiaria[count].ExpReward,
-		&QuestDiaria[count].GoldReward,
-		&QuestDiaria[count].Item->sIndex,
-		&QuestDiaria[count].Item->stEffect[0].cEffect,
-		&QuestDiaria[count].Item->stEffect[0].cValue,
-		&QuestDiaria[count].Item->stEffect[1].cEffect,
-		&QuestDiaria[count].Item->stEffect[1].cValue,
-		&QuestDiaria[count].Item->stEffect[2].cEffect,
-		&QuestDiaria[count].Item->stEffect[2].cValue) != EOF && count < 7)
+	while (count < 7)
+	{
+		int value[17] = {};
+
+		const int parsed = fscanf(fp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+			&value[0], &value[1], &value[2], &value[3], &value[4], &value[5],
+			&value[6], &value[7], &value[8], &value[9], &value[10], &value[11],
+			&value[12], &value[13], &value[14], &value[15], &value[16]);
+
+		if (parsed == EOF)
+			break;
+
+		if (parsed != 17)
+		{
+			char invalidLine[512];
+			fgets(invalidLine, sizeof(invalidLine), fp);
+			continue;
+		}
+
+		const auto fitsShort = [](int v) { return v >= -32768 && v <= 32767; };
+		const auto fitsByte = [](int v) { return v >= 0 && v <= 255; };
+
+		if (!fitsShort(value[0]) || !fitsShort(value[1]) ||
+			!fitsShort(value[2]) || !fitsShort(value[3]) ||
+			!fitsShort(value[4]) || !fitsShort(value[5]) ||
+			!fitsShort(value[6]) || !fitsShort(value[7]) ||
+			!fitsShort(value[10]) ||
+			!fitsByte(value[11]) || !fitsByte(value[12]) ||
+			!fitsByte(value[13]) || !fitsByte(value[14]) ||
+			!fitsByte(value[15]) || !fitsByte(value[16]))
+			continue;
+
+		STRUCT_QUEST& quest = QuestDiaria[count];
+		quest.IndexQuest = static_cast<short>(value[0]);
+		quest.Nivel = static_cast<short>(value[1]);
+		quest.IdMob1 = static_cast<short>(value[2]);
+		quest.QtdMob1 = static_cast<short>(value[3]);
+		quest.IdMob2 = static_cast<short>(value[4]);
+		quest.QtdMob2 = static_cast<short>(value[5]);
+		quest.IdMob3 = static_cast<short>(value[6]);
+		quest.QtdMob3 = static_cast<short>(value[7]);
+		quest.ExpReward = value[8];
+		quest.GoldReward = value[9];
+		quest.Item[0].sIndex = static_cast<short>(value[10]);
+		quest.Item[0].stEffect[0].cEffect = static_cast<unsigned char>(value[11]);
+		quest.Item[0].stEffect[0].cValue = static_cast<unsigned char>(value[12]);
+		quest.Item[0].stEffect[1].cEffect = static_cast<unsigned char>(value[13]);
+		quest.Item[0].stEffect[1].cValue = static_cast<unsigned char>(value[14]);
+		quest.Item[0].stEffect[2].cEffect = static_cast<unsigned char>(value[15]);
+		quest.Item[0].stEffect[2].cValue = static_cast<unsigned char>(value[16]);
 		count++;
+	}
 
 	fclose(fp);
 }
@@ -12003,9 +12039,16 @@ void ReadLevelItemConfig(void)
 		int ival4 = 0, ival5 = 0, ival6 = 0, ival7 = 0, id = 0;
 
 		//sscanf(tmp, "%d %d %d %d %d %d %d %d %d %d", &cls, &type, &level, &ival1, &ival2, &ival3, &ival4, &ival5, &ival6, &ival7);
-		sscanf(tmp, "%d %d %d %d %d %d %d %d %d %d", &id, &level, &cls, &type, &ival1, &ival2, &ival3, &ival4, &ival5, &ival6, &ival7);
+		const int parsed = sscanf(tmp, "%d %d %d %d %d %d %d %d %d %d %d", &id, &level, &cls, &type, &ival1, &ival2, &ival3, &ival4, &ival5, &ival6, &ival7);
 
-		Item.sIndex = ival1;
+		if (parsed != 11 || level < 0 || level >= 400 || cls < 0 || cls > 4 || type < 0 || type > 4 ||
+			ival1 < -32768 || ival1 > 32767 ||
+			ival2 < 0 || ival2 > 255 || ival3 < 0 || ival3 > 255 ||
+			ival4 < 0 || ival4 > 255 || ival5 < 0 || ival5 > 255 ||
+			ival6 < 0 || ival6 > 255 || ival7 < 0 || ival7 > 255)
+			continue;
+
+		Item.sIndex = static_cast<short>(ival1);
 		Item.stEffect[0].cEffect = ival2;
 		Item.stEffect[0].cValue = ival3;
 		Item.stEffect[1].cEffect = ival4;

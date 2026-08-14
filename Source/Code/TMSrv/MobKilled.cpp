@@ -759,22 +759,24 @@ void MobKilled(int target, int conn, int PosX, int PosY)
 							gift.stEffect[2].cEffect = Gift[_rand][5];
 							gift.stEffect[2].cValue = Gift[_rand][6];
 
-							if (partyleader > 0 && partyleader < MAX_USER);
-							DoTeleport(partyleader, 2100, 2100);
-
-							for (int i = 0; i < MAX_PARTY; i++)
+							if (partyleader > 0 && partyleader < MAX_USER)
 							{
-								int partymember = pMob[partyleader].PartyList[i];
-								if (pUser[partymember].Mode != USER_PLAY)
-									continue;
-								DoTeleport(partymember, 2100, 2100);
-								PutItem(partymember, &gift);
-								PutItem(partyleader, &gift);
+								DoTeleport(partyleader, 2100, 2100);
 
-								pUser[partymember].Honra += 5;
-								pUser[partyleader].Honra += 5;
-								SendMsgExp(partymember, "+ 5 pontos de Honra", TNColor::NewYellow, false);
-								SendMsgExp(partyleader, "+ 5 pontos de Honra", TNColor::NewYellow, false);
+								for (int i = 0; i < MAX_PARTY; i++)
+								{
+									int partymember = pMob[partyleader].PartyList[i];
+									if (partymember <= 0 || partymember >= MAX_USER || pUser[partymember].Mode != USER_PLAY)
+										continue;
+									DoTeleport(partymember, 2100, 2100);
+									PutItem(partymember, &gift);
+									PutItem(partyleader, &gift);
+
+									pUser[partymember].Honra += 5;
+									pUser[partyleader].Honra += 5;
+									SendMsgExp(partymember, "+ 5 pontos de Honra", TNColor::NewYellow, false);
+									SendMsgExp(partyleader, "+ 5 pontos de Honra", TNColor::NewYellow, false);
+								}
 							}
 
 

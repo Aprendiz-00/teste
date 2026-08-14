@@ -977,7 +977,7 @@ void ProcessDBMessage(char* Msg)
 				if ((pMob[conn].MOB.Carry[i].sIndex < 0) || (pMob[conn].MOB.Carry[i].sIndex > MAX_ITEMLIST))
 				{
 					
-					snprintf(temp, sizeof(temp), " $s Slots Desbugados Inventario", pMob[conn].MOB.MobName);
+					snprintf(temp, sizeof(temp), " %s Slots Desbugados Inventario", pMob[conn].MOB.MobName);
 					SystemLog(pUser[conn].AccountName, pUser[conn].MacAddress, pUser[conn].IP, temp);
 					BASE_ClearItem(&pMob[conn].MOB.Carry[i]);
 					SendItem(conn, ITEM_PLACE_CARRY, i, &pMob[conn].MOB.Carry[i]);
@@ -989,7 +989,7 @@ void ProcessDBMessage(char* Msg)
 				if ((pUser[conn].Cargo[i].sIndex < 0) || (pUser[conn].Cargo[i].sIndex > MAX_ITEMLIST))
 				{
 					
-					snprintf(temp, sizeof(temp), " $s Slots Desbugados Bau", pMob[conn].MOB.MobName);
+					snprintf(temp, sizeof(temp), " %s Slots Desbugados Bau", pMob[conn].MOB.MobName);
 					SystemLog(pUser[conn].AccountName, pUser[conn].MacAddress, pUser[conn].IP, temp);
 					BASE_ClearItem(&pUser[conn].Cargo[i]);
 					SendItem(conn, ITEM_PLACE_CARRY, i, &pUser[conn].Cargo[i]);

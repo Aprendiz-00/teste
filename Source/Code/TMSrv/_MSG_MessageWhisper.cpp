@@ -2219,7 +2219,7 @@ void Exec_MSG_MessageWhisper(int conn, char* pMsg)
 				//GUILDSS
 				if (pMob[conn].MOB.Guild != 0 && pMob[conn].MOB.GuildLevel == 9 && pMob[conn].MOB.Clan != pMob[target].MOB.Clan)
 				{
-					snprintf(tt, sizeof(tt), "[ %s (%d) ] Cidadania: %d  Fama: %d", guildind, GuildInfo[usGuild].Fame, pMob[target].extra.Citizen, pMob[target].extra.Fame, pMob[conn].MOB.Guild);
+					snprintf(tt, sizeof(tt), "[ %s (%d) ] Cidadania: %d  Fama: %d", guildind, GuildInfo[usGuild].Fame, pMob[target].extra.Citizen, pMob[target].extra.Fame);
 					snprintf(temp, sizeof(temp), "%s  %s %s ", pMob[target].MOB.MobName, tt, guildname);
 				}
 				if (pMob[conn].MOB.Clan != pMob[target].MOB.Clan)
@@ -2240,7 +2240,7 @@ void Exec_MSG_MessageWhisper(int conn, char* pMsg)
 				//GUILDSS
 				if (pMob[conn].MOB.GuildLevel == 9 && pMob[conn].MOB.Guild == pMob[target].MOB.Guild)
 				{
-					snprintf(tt, sizeof(tt), "[ %s (%d) ] Cidadania: %d  Fama: %d", guildind, GuildInfo[usGuild].Fame, pMob[target].extra.Citizen, pMob[target].extra.Fame, pMob[conn].MOB.Guild);
+					snprintf(tt, sizeof(tt), "[ %s (%d) ] Cidadania: %d  Fama: %d", guildind, GuildInfo[usGuild].Fame, pMob[target].extra.Citizen, pMob[target].extra.Fame);
 					snprintf(temp, sizeof(temp), "%s  %s  ", pMob[target].MOB.MobName, tt);
 				}
 				if (pMob[conn].MOB.GuildLevel == 9 && pMob[conn].MOB.Guild != pMob[target].MOB.Guild)
