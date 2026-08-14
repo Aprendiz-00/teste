@@ -42,18 +42,19 @@ $total = $warnings.Count
 $codeGroups = @(
     $warnings |
         Group-Object Code |
-        Sort-Object Count -Descending, Name |
+        Sort-Object -Property @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false } |
         Select-Object -First $TopCodes
 )
 $fileGroups = @(
     $warnings |
         Where-Object { $_.File -ne '<unknown>' } |
         Group-Object File |
-        Sort-Object Count -Descending, Name |
+        Sort-Object -Property @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false } |
         Select-Object -First $TopFiles
 )
+$uniqueCodeCount = @($warnings.Code | Sort-Object -Unique).Count
 
-Write-Host "Legacy warning telemetry: total=$total unique_codes=$(@($warnings.Code | Sort-Object -Unique).Count)"
+Write-Host "Legacy warning telemetry: total=$total unique_codes=$uniqueCodeCount"
 foreach ($group in $codeGroups) {
     Write-Host ("  {0}: {1}" -f $group.Name, $group.Count)
 }
@@ -62,6 +63,7 @@ if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_STEP_SUMMARY)) {
     Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '### Legacy compiler warning telemetry'
     Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ''
     Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Total warning occurrences: **$total**"
+    Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Unique warning codes: **$uniqueCodeCount**"
     Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ''
 
     if ($codeGroups.Count -gt 0) {
