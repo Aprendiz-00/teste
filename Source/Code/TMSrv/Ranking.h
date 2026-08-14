@@ -5,7 +5,7 @@ struct PLAYER_RANKING
 	char Nick[16];
 	int Level;
 	int Classe;
-	int Evolucao;
+	int Evolução;
 	int Reino;
 	int Kills;
 };
