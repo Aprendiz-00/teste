@@ -160,7 +160,7 @@ public:
 		char PassWord[16];
 		char Login[16];
 		bool autoStore;
-		bool GrupoAceitarSolicita\u00E7\u00E3o;
+		bool GrupoAceitarSolicitacao;
 		int CheckPista;
 		int CheckPesa;
 		int CheckAgua;
