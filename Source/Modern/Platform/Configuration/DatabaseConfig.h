@@ -2,6 +2,7 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <stdexcept>
 #include <string>
 
 namespace wyd::platform::database
@@ -15,6 +16,52 @@ namespace wyd::platform::database
 		unsigned int port;
 		unsigned int connectTimeoutSeconds;
 	};
+
+	inline bool HasNonEmptyEnvironmentValue(const char* name) noexcept
+	{
+		const char* value = std::getenv(name);
+		return value != nullptr && value[0] != '\0';
+	}
+
+	inline bool EnvironmentFlagEnabled(const char* name)
+	{
+		const char* rawValue = std::getenv(name);
+		if (rawValue == nullptr || rawValue[0] == '\0')
+			return false;
+
+		const std::string value(rawValue);
+		return value == "1" ||
+			value == "true" || value == "TRUE" ||
+			value == "yes" || value == "YES" ||
+			value == "on" || value == "ON";
+	}
+
+	inline void EnforceStrictDatabaseEnvironmentIfRequested()
+	{
+		if (!EnvironmentFlagEnabled("WYD_DB_REQUIRE_ENV"))
+			return;
+
+		const char* requiredNames[] = {
+			"WYD_DB_HOST",
+			"WYD_DB_USER",
+			"WYD_DB_PASSWORD",
+			"WYD_DB_NAME"
+		};
+
+		std::string missing;
+		for (const char* name : requiredNames)
+		{
+			if (HasNonEmptyEnvironmentValue(name))
+				continue;
+
+			if (!missing.empty())
+				missing += ", ";
+			missing += name;
+		}
+
+		if (!missing.empty())
+			throw std::runtime_error("Strict database configuration requires non-empty environment values: " + missing);
+	}
 
 	inline std::string EnvironmentOrDefault(const char* name, const char* fallback)
 	{
@@ -55,6 +102,8 @@ namespace wyd::platform::database
 		unsigned int defaultPort,
 		unsigned int defaultConnectTimeoutSeconds)
 	{
+		EnforceStrictDatabaseEnvironmentIfRequested();
+
 		DatabaseConfig config{};
 
 		config.host = EnvironmentOrDefault("WYD_DB_HOST", defaultHost);
