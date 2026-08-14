@@ -1,4 +1,4 @@
-﻿#include <mysql.h>
+﻿#include "../include_mysql/mysql.h"
 #include <stdint.h>
 #pragma comment(lib, "libmysql.lib")
 #include "../../Code/DBSRV/singleton.h"
