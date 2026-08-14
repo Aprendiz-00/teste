@@ -29,8 +29,14 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout MySQL safety surface
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            Source/Code/TMSrv
+            Source/Code/DBSrv
+            tools/ci
 
       - name: Validate legacy MySQL safety invariants
         shell: pwsh
