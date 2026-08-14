@@ -41,7 +41,9 @@ function New-CompatibilityProjectCopy([string]$ProjectPath, [string]$ProjectName
 
     foreach ($node in $compileNodes) {
         $include = $node.GetAttribute('Include')
-        $sourceCharset = if ($include -eq '..\Basedef.cpp') { '.1252' } else { 'utf-8' }
+        # Basedef.cpp contains historical Korean/CP949 source bytes; the active
+        # TMSrv/DBSrv sources are UTF-8. Keep this exception isolated here.
+        $sourceCharset = if ($include -eq '..\Basedef.cpp') { '949' } else { 'utf-8' }
         $options = $projectXml.CreateElement('AdditionalOptions', $namespace)
         $options.InnerText = "/source-charset:$sourceCharset %(AdditionalOptions)"
         [void]$node.AppendChild($options)
@@ -78,8 +80,6 @@ $originalCl = $env:CL
 $temporaryProjects = @()
 
 $env:INCLUDE = if ([string]::IsNullOrWhiteSpace($originalInclude)) { $mysqlIncludeDir } else { "$mysqlIncludeDir;$originalInclude" }
-# Source charset is configured per translation unit in the compatibility project.
-# The execution charset remains UTF-8 and /I makes direct <mysql.h> includes deterministic.
 $requiredCompilerOptions = "/std:c++17 /execution-charset:utf-8 /I`"$mysqlIncludeDir`""
 $env:CL = if ([string]::IsNullOrWhiteSpace($originalCl)) { $requiredCompilerOptions } else { "$requiredCompilerOptions $originalCl" }
 
