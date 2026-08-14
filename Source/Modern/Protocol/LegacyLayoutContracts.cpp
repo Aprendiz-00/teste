@@ -53,4 +53,16 @@ namespace wyd::protocol::contracts
     static_assert(offsetof(MSG_AccountLogin, Version) == 92, "MSG_AccountLogin::Version offset changed.");
     static_assert(offsetof(MSG_AccountLogin, DBNeedSave) == 96, "MSG_AccountLogin::DBNeedSave offset changed.");
     static_assert(offsetof(MSG_AccountLogin, IP) == 100, "MSG_AccountLogin::IP offset changed.");
+
+    static_assert(_MSG_DBCheckPrimaryAccount == 0x0414, "DB primary-account check packet type changed.");
+    static_assert(sizeof(MSG_DBCheckPrimaryAccount) == 62, "MSG_DBCheckPrimaryAccount wire size changed.");
+    static_assert(offsetof(MSG_DBCheckPrimaryAccount, AccountName) == 12, "MSG_DBCheckPrimaryAccount::AccountName offset changed.");
+    static_assert(offsetof(MSG_DBCheckPrimaryAccount, MacAddres) == 28, "MSG_DBCheckPrimaryAccount::MacAddres offset changed.");
+    static_assert(offsetof(MSG_DBCheckPrimaryAccount, IP) == 46, "MSG_DBCheckPrimaryAccount::IP offset changed.");
+
+    static_assert(_MSG_DBPrimaryAccount == 0x0817, "DB primary-account packet type changed.");
+    static_assert(sizeof(MSG_DBPrimaryAccount) == 62, "MSG_DBPrimaryAccount wire size changed.");
+    static_assert(offsetof(MSG_DBPrimaryAccount, AccountName) == 12, "MSG_DBPrimaryAccount::AccountName offset changed.");
+    static_assert(offsetof(MSG_DBPrimaryAccount, MacAddres) == 28, "MSG_DBPrimaryAccount::MacAddres offset changed.");
+    static_assert(offsetof(MSG_DBPrimaryAccount, IP) == 46, "MSG_DBPrimaryAccount::IP offset changed.");
 }
