@@ -133,7 +133,7 @@ public:
 	int Unk_2736; // 2736
 	int Range; // 2740
 	int CastleStatus; // 2744
-	char Unk9[400]; // 2748 // LastSkillTick // size correto é 400.
+	char Unk9[400]; // 2748 // LastSkillTick // size correto Ã© 400.
 	 int Donate;
 	 int Honra;
 	 int BossLocal1;
@@ -195,7 +195,7 @@ public:
 
 		bool autoStore; 
 
-		bool GrupoAceitarSolicitação;
+		bool GrupoAceitarSolicitacao;
 
 		int CheckPista;
 		int CheckPesa;
