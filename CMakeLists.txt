@@ -8,35 +8,35 @@ project(WydModernization
 
 option(WYD_BUILD_MODERN_TESTS "Build tests for the modernized components" ON)
 
-add_library(wyd_protocol_legacy INTERFACE)
+add_library(wyd_modern_foundation INTERFACE)
 
-target_include_directories(wyd_protocol_legacy
+target_include_directories(wyd_modern_foundation
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/Source/Modern
 )
 
-target_compile_features(wyd_protocol_legacy INTERFACE cxx_std_20)
+target_compile_features(wyd_modern_foundation INTERFACE cxx_std_20)
 
 if(MSVC)
-    target_compile_options(wyd_protocol_legacy INTERFACE /W4 /permissive-)
+    target_compile_options(wyd_modern_foundation INTERFACE /W4 /permissive-)
 else()
-    target_compile_options(wyd_protocol_legacy INTERFACE -Wall -Wextra -Wpedantic)
+    target_compile_options(wyd_modern_foundation INTERFACE -Wall -Wextra -Wpedantic)
 endif()
 
 if(WYD_BUILD_MODERN_TESTS)
     enable_testing()
 
-    add_executable(legacy_protocol_layout_tests
-        tests/protocol/LegacyProtocolLayoutTests.cpp
+    add_executable(modern_foundation_tests
+        tests/foundation/BuildSanityTests.cpp
     )
 
-    target_link_libraries(legacy_protocol_layout_tests
-        PRIVATE wyd_protocol_legacy
+    target_link_libraries(modern_foundation_tests
+        PRIVATE wyd_modern_foundation
     )
 
     add_test(
-        NAME legacy_protocol_layout
-        COMMAND legacy_protocol_layout_tests
+        NAME modern_foundation_sanity
+        COMMAND modern_foundation_tests
     )
 endif()
 
