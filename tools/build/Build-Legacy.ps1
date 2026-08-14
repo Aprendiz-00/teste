@@ -108,10 +108,12 @@ $env:INCLUDE = if ([string]::IsNullOrWhiteSpace($originalInclude)) {
     "$mysqlIncludeDir;$originalInclude"
 }
 
-# The legacy source already relies on C++17 syntax in the modern compatibility
-# shim. /utf-8 also makes source parsing deterministic for accented comments
-# and pragma-region labels that previously depended on the developer codepage.
-$requiredCompilerOptions = '/std:c++17 /utf-8'
+# The compatibility layer requires C++17. The legacy source tree contains a
+# mix of historical encodings, so the compile gate intentionally keeps the
+# MSVC default source codepage instead of forcing /utf-8 globally. Active C++
+# identifiers are normalized to ASCII as they are encountered; a dedicated
+# source-encoding normalization pass will follow after the clean compile gate.
+$requiredCompilerOptions = '/std:c++17'
 $env:CL = if ([string]::IsNullOrWhiteSpace($originalCl)) {
     $requiredCompilerOptions
 } else {
