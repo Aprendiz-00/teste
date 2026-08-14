@@ -34,8 +34,13 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout modern build surface
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            Source/Modern
+            tests
 
       - name: Configure modern components
         run: cmake -S . -B out/ci -DWYD_BUILD_MODERN_TESTS=ON
@@ -50,8 +55,12 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      # Full checkout is intentional here: the preflight audits the repository
+      # for legacy linker dependencies and machine-specific build assumptions.
+      - name: Checkout repository for legacy audit
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Audit legacy build prerequisites
         shell: pwsh
