@@ -145,22 +145,7 @@ foreach ($entry in $projects) {
 
 $target = if ($CompileOnly) { 'ClCompile' } else { 'Build' }
 $originalLib = $env:LIB
-$originalInclude = $env:INCLUDE
-$originalCl = $env:CL
 $temporaryPaths = @()
-
-$env:INCLUDE = if ([string]::IsNullOrWhiteSpace($originalInclude)) {
-    $mysqlIncludeDir
-} else {
-    "$mysqlIncludeDir;$originalInclude"
-}
-
-$requiredCompilerOptions = "/std:c++17 /MP /FS /I`"$mysqlIncludeDir`""
-$env:CL = if ([string]::IsNullOrWhiteSpace($originalCl)) {
-    $requiredCompilerOptions
-} else {
-    "$requiredCompilerOptions $originalCl"
-}
 
 if (-not $CompileOnly) {
     if ([string]::IsNullOrWhiteSpace($env:WYD_MYSQL_LIB_DIR)) {
@@ -217,8 +202,6 @@ try {
 }
 finally {
     $env:LIB = $originalLib
-    $env:INCLUDE = $originalInclude
-    $env:CL = $originalCl
     foreach ($path in $temporaryPaths) {
         Remove-Item -Force $path -ErrorAction SilentlyContinue
     }
