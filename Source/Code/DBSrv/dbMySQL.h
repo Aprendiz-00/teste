@@ -13,7 +13,7 @@
 #include <iostream>
 #include <tchar.h>
 #include <stdint.h>
-#include <mysql.h>
+#include "../include_mysql/mysql.h"
 
 #define CONSOLE 1
 

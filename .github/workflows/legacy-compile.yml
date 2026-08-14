@@ -1,0 +1,38 @@
+name: Legacy C++ Compile Gate
+
+on:
+  pull_request:
+    paths:
+      - 'Source/Code/**'
+      - 'tools/build/**'
+      - '.github/workflows/legacy-compile.yml'
+  push:
+    branches:
+      - main
+      - 'build/**'
+      - 'persistence/**'
+    paths:
+      - 'Source/Code/**'
+      - 'tools/build/**'
+      - '.github/workflows/legacy-compile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compile-release-win32:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout legacy source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            Source
+            tools/build
+
+      - name: Compile TMSrv and DBSrv without link
+        shell: pwsh
+        run: ./tools/build/Build-Legacy.ps1 -Configuration Release -Project All -CompileOnly
