@@ -1,16 +1,20 @@
-# Estado Atual do Servidor — Baseline Arquitetural
+# Estado Atual do Servidor — Baseline Arquitetural Atualizado
 
-**Status:** baseline inicial  
-**Escopo:** `Source/Code/TMSrv`, `Source/Code/DBSrv`, `Source/Code/CPSock.*`, `Server/` e `Server/banco.sql`.
+**Status:** foundation de modernização ativa  
+**Atualizado em:** 2026-08-14  
+**Escopo:** `Source/Code/TMSrv`, `Source/Code/DBSrv`, `Source/Code/CPSock.*`, `Source/Modern`, `Server/`, CI e tooling de build.
 
 ## 1. Visão geral
 
-O servidor atual é um sistema C/C++ Win32 orientado ao protocolo legado do WYD. A solução é composta principalmente por:
+O servidor continua sendo um sistema C/C++ Win32 orientado ao protocolo legado do WYD, mas agora possui uma camada de foundation verificável ao redor do legado.
+
+Componentes principais:
 
 - **TMSrv** — world/game server: sessões, world state, combate, movimento, inventário, itens, quests, eventos, guildas, comércio e integração com DBSrv/MySQL.
 - **DBSrv** — persistência e coordenação de contas/personagens/guildas, combinando FileDB legado com MySQL.
 - **CPSock** — transporte TCP/protocolo legado baseado em Winsock e `WSAAsyncSelect`/mensagens de janela.
-- **Common/Runtime data** — mapas, drops, configs, guild data, bases de mobs/summons e demais conteúdo carregado de arquivos.
+- **Source/Modern** — componentes novos isolados do legado, atualmente usados para configuração e contratos verificáveis.
+- **Tooling/CI** — CMake moderno, MSBuild wrapper, compile gate Win32, safety gates e telemetria de warnings.
 
 ## 2. Fluxo principal
 
@@ -32,151 +36,204 @@ TMSrv
     +---- SQL direto ------------> MySQL
 ```
 
+A topologia de runtime ainda é essencialmente a original. A modernização atual protege e mede esse comportamento antes de extrair responsabilidades.
+
 ## 3. Estado global e acoplamento
 
-O TMSrv mantém grandes estruturas globais, entre elas usuários, mobs, itens, grids, guildas e estados de eventos. Regras de mundo e gameplay acessam diretamente essas estruturas.
+O TMSrv ainda mantém grandes estruturas globais de usuários, mobs, itens, grids, guildas e estados de eventos. Regras de mundo/gameplay acessam essas estruturas diretamente.
 
-Impactos:
+Riscos restantes:
 
 - forte acoplamento entre infraestrutura e domínio;
-- dificuldade para testes unitários;
+- baixa testabilidade de regras de gameplay;
 - alterações locais podem produzir regressões sistêmicas;
-- concorrência futura é difícil de introduzir com segurança;
-- escalabilidade depende principalmente de um único processo stateful.
+- concorrência futura exige uma fronteira de estado explícita;
+- escalabilidade continua dependente de processo stateful.
 
-## 4. Processamento de pacotes
+Nenhuma tentativa de remover esses globals deve preceder testes comportamentais e um `GameContext`/adapter equivalente.
 
-`ProcessClientMessage` atua como dispatcher central por `switch` de `std->Type`, chamando handlers `Exec_MSG_*`.
+## 4. Protocolo
 
-Pontos positivos:
+`ProcessClientMessage` continua atuando como dispatcher central por `std->Type`, chamando handlers `Exec_MSG_*`.
 
-- comportamento explícito;
-- protocolo existente é conhecido pelo servidor;
-- handlers já possuem alguma separação por arquivo.
+Melhorias já presentes:
 
-Limitações:
+- contratos compile-time de ABI para o header `_MSG` e variantes padrão;
+- proteção de tamanhos/offsets do pacote `MSG_AccountLogin` no alvo Win32;
+- IDs/flags básicos do protocolo protegidos pelo compile gate;
+- contratos são adicionados apenas em CI com `WYD_ENABLE_PROTOCOL_CONTRACTS=true`, sem alterar binários normais.
 
-- validação de pacotes está distribuída;
-- transporte, protocolo e gameplay permanecem acoplados;
-- o dispatcher cresce continuamente;
-- handlers dependem de globals e funções do TMSrv.
+Riscos restantes:
+
+- validação de pacotes distribuída;
+- transporte, protocolo e gameplay acoplados;
+- ausência de testes comportamentais de encode/decode/checksum;
+- estruturas fora de regiões `pack(1)` ainda dependem do ABI/alinhamento do compilador.
 
 ## 5. Rede
 
-`CPSock` depende diretamente de:
+`CPSock` ainda depende diretamente de Winsock, HWND, `WSAAsyncSelect`, eventos `FD_ACCEPT`/`FD_READ`/`FD_CLOSE` e buffers manuais.
 
-- Winsock;
-- HWND;
-- `WSAAsyncSelect`;
-- eventos `FD_ACCEPT`, `FD_READ`, `FD_CLOSE`;
-- buffers manuais alocados por `malloc/free`.
-
-O protocolo usa `HEADER` legado e transformação/checksum próprios. Esta compatibilidade é um ativo e deverá ser preservada por um adapter.
+O protocolo e a transformação/checksum existentes continuam sendo requisitos de compatibilidade. A extração da camada de rede deve preservar esses contratos por adapter antes de qualquer troca de transporte.
 
 ### Risco conhecido
 
-O parser pode devolver um pacote mesmo quando o checksum diverge, sinalizando o erro por parâmetros separados. Isso exige disciplina de todos os chamadores e deverá ser endurecido quando a camada de protocolo for extraída.
+O parser legado pode sinalizar divergência de checksum separadamente do retorno do pacote. Este contrato ainda precisa ser coberto por teste comportamental antes de endurecimento.
 
 ## 6. Timers e game loop
 
-`ProcessSecTimer` concentra múltiplas responsabilidades:
+`ProcessSecTimer` permanece concentrando shutdown, bloqueios de IP, persistência periódica, flush de sockets, processamento de jogadores, regras de mapas/quests e eventos.
 
-- shutdown;
-- billing;
-- bloqueios de IP;
-- persistência periódica;
-- flush de sockets;
-- processamento por jogador;
-- regras de mapas e quests;
-- teleporte/restrições;
-- lógica de eventos.
-
-O custo aumenta com a quantidade de jogadores e com cada regra nova adicionada ao loop.
+A foundation atual não modifica timing de gameplay. A decomposição desse loop continua sendo uma etapa posterior e de alto risco.
 
 ## 7. Persistência
 
-Existem dois mecanismos simultâneos:
+Persistem dois mecanismos simultâneos:
 
 1. **FileDB legado** com estruturas binárias de conta/personagem.
 2. **MySQL** para contas, ranking, configuração, logs e sistemas adicionais.
 
-Há implementações MySQL duplicadas em TMSrv e DBSrv.
+As implementações MySQL de TMSrv e DBSrv continuam duplicadas, mas vários defeitos de infraestrutura já foram removidos.
 
-### Riscos concretos identificados
+### Melhorias já presentes
 
-- conexão aberta/fechada por consulta;
-- SQL montado com `sprintf`;
-- buffers de query globais;
-- credenciais hardcoded;
-- ausência de prepared statements;
-- retorno de ponteiro para buffer local em `wInfo`, causando undefined behavior;
-- ownership/lifetime de `MYSQL*` e `MYSQL_RES*` pouco claro;
-- possibilidade de fechamento duplicado de conexão em alguns fluxos.
+- timeout de conexão usa o tipo esperado pela MySQL C API;
+- `wInfo` não retorna mais ponteiro para buffer de stack;
+- ownership de `MYSQL_RES*`/`MYSQL*` foi tornado explícito no helper legado;
+- fechamentos duplicados identificados foram removidos;
+- configuração compartilhada usa `WYD_DB_*` com valores próprios em `std::string`;
+- `WYD_DB_REQUIRE_ENV=1` permite exigir host/user/password/database externos;
+- falha de inicialização/conexão MySQL retorna `NULL` de forma controlada e não segue para `mysql_query` com handle inválido;
+- MySQL Safety Baseline protege essas invariantes.
 
-## 8. Segurança
+### Riscos restantes
 
-Baseline atual apresenta:
+- conexão ainda é aberta/fechada por consulta;
+- SQL ainda é montado amplamente com `sprintf`/strings;
+- buffers globais de query ainda existem;
+- ausência de prepared statements e transaction boundary explícita em muitos fluxos;
+- FileDB e MySQL permanecem misturados no domínio legado;
+- compatibilidade ainda permite defaults legados quando strict mode não está ativado.
 
-- configuração de banco dentro de headers;
-- usuário `root` no código;
-- dump SQL contendo dados de desenvolvimento;
-- autenticação e banimentos parcialmente baseados em arquivos;
-- ausência de secret provider;
-- baixa separação entre responsabilidades de game/admin/database.
+## 8. Segurança e configuração
 
-Todo segredo real deverá ser rotacionado antes de qualquer deployment público derivado desta árvore.
+A situação não é mais equivalente ao baseline inicial.
 
-## 9. Build
+Controles atuais:
 
-A solução usa Visual Studio/MSBuild e toolset moderno em parte da árvore, porém ainda contém:
+- configuração moderna de banco via ambiente;
+- strict mode opt-in para deployments controlados;
+- CI impede introdução de senha MySQL hardcoded não vazia nos headers legados;
+- provider moderno e wiring de conexão fazem parte do MySQL Safety Gate;
+- `.env`/segredos locais são ignorados pelo Git.
 
-- caminhos absolutos de máquinas de desenvolvedor;
-- configurações Win32 mesmo quando a solução oferece nomes x64;
-- warning level inconsistente;
-- dependências MySQL não declaradas de forma reproduzível;
-- runtime DLLs versionadas junto ao servidor.
+Riscos restantes:
 
-## 10. Conteúdo
+- defaults de compatibilidade ainda usam host/user legados quando strict mode está desligado;
+- SQL dinâmico continua sendo a principal superfície de segurança da persistência;
+- autenticação/admin/database ainda possuem baixa separação de responsabilidades;
+- qualquer segredo real fora do repositório deve ser gerenciado/rotacionado pelo deployment.
 
-O projeto possui uma quantidade relevante de conteúdo externo ao C++:
+## 9. Build e CI
 
-- mapas/attributes;
-- drops;
-- bases de mobs/summons;
-- configs;
-- quests/rates;
-- guild data;
-- eventos e quizzes.
+A foundation de build mudou substancialmente.
 
-Isto é uma vantagem para a futura Content Engine. Entretanto, ainda há muitas coordenadas, IDs, chances e regras hardcoded no código.
+### Disponível hoje
 
-## 11. Prioridades técnicas
+- CMake para componentes modernos;
+- testes modernos em Linux e Windows;
+- wrapper `Build-Legacy.ps1` para MSBuild;
+- compile-only Release/Win32 de TMSrv e DBSrv em runner Windows limpo;
+- `Directory.Build.targets` compartilhado para C++17, include MySQL e caminhos portáveis;
+- headers MySQL versionados no repositório;
+- contrato de dependência em `config/build-dependencies.json`;
+- baseline esperado: MySQL Connector/C 6.1.11, headers 5.7.16, Win32;
+- warning telemetry não bloqueante no Job Summary;
+- preflight para assumptions legados e dependência MySQL.
 
-Classificação inicial:
+### Limites atuais
 
-| Área | Estado | Prioridade |
+- `libmysql.lib` continua externamente provisionada;
+- full link reproduzível com origem/checksum auditados ainda não foi estabelecido;
+- alguns `.vcxproj` mantêm paths históricos, embora o policy compartilhado sobrescreva os settings relevantes;
+- labels x64 da solution não significam que o legado já tenha ABI x64 suportado;
+- CRT/configuração Release/Debug ainda requer auditoria antes de mudança.
+
+## 10. Testes
+
+A afirmação antiga de que os testes eram praticamente ausentes já não é precisa.
+
+Cobertura atual inclui:
+
+- testes CMake/sanity da foundation moderna;
+- testes do `DatabaseConfig` em Linux/Windows;
+- MySQL safety invariants;
+- compile-only integral de TMSrv/DBSrv em Win32;
+- contratos compile-time de protocolo;
+- preflight de dependências/build;
+- telemetria estruturada de warnings.
+
+Ainda faltam os testes que mais reduzem risco de gameplay:
+
+- login/save/logout com runtime real;
+- encode/decode/checksum;
+- persistência FileDB/MySQL com fixtures;
+- inventário/item movement;
+- combate/drops;
+- integração TMSrv↔DBSrv↔cliente.
+
+## 11. Encoding legado
+
+Parte dos fontes antigos contém encoding misto e não pode ser transcodificada em massa.
+
+O CI não usa `/utf-8` global. Para um label não semântico de `#pragma region` incompatível com o runner atual, o wrapper produz uma cópia temporária byte-preserving de `Server.cpp` e remove o arquivo após o build.
+
+Regra: alterações em arquivos mixed-encoding devem preservar bytes não relacionados.
+
+## 12. Observabilidade
+
+Logs de runtime ainda são majoritariamente `printf`/arquivos e não constituem observabilidade moderna.
+
+Entretanto, o pipeline agora publica telemetria de warnings por código e por arquivo, sem transformar o backlog histórico inteiro em erro.
+
+Próximos passos aqui:
+
+- correlação de logs por sessão/operação;
+- níveis/estrutura de log;
+- métricas de conexão, save, tick e fila;
+- só depois, alertas operacionais.
+
+## 13. Prioridades técnicas atuais
+
+| Área | Estado atual | Prioridade |
 |---|---|---|
-| Build reproduzível | insuficiente | crítica |
-| Testes de regressão | praticamente ausentes | crítica |
-| Segurança/segredos | insuficiente | crítica |
-| Persistência MySQL | frágil/duplicada | crítica |
-| Protocolo | valioso, mas acoplado | alta |
+| Full link reproduzível | compile reproduzível; link externo | alta |
+| Testes comportamentais | foundation existe; runtime ainda sem cobertura | crítica |
+| Persistência MySQL | invariantes melhores; SQL/duplicação ainda frágeis | crítica |
+| FileDB/persistence boundary | legado acoplado | crítica |
+| Protocolo | ABI-base protegido; lógica ainda acoplada | alta |
 | Network core | Win32 legado | alta |
 | GameContext/state | globals massivos | alta |
+| Observabilidade runtime | logs ad hoc; CI medido | alta |
 | Conteúdo data-driven | parcial | alta |
-| Observabilidade | logs ad hoc | alta |
-| Novos sistemas | possíveis após fundação | posterior |
+| Novos sistemas | somente após reduzir risco estrutural | posterior |
 
-## 12. Regra de preservação
+## 14. Regra de preservação
 
-Até que existam testes de compatibilidade, qualquer mudança nos seguintes componentes deve ser tratada como **alto risco**:
+Continuam sendo componentes de **alto risco**:
 
-- layout binário de structs de protocolo;
-- IDs/tamanhos dos pacotes;
+- layout binário/IDs/tamanhos do protocolo;
 - transformação/checksum;
 - `STRUCT_MOB`, `STRUCT_ITEM`, `STRUCT_ACCOUNTFILE`;
 - serialização FileDB;
 - timing de login/save/logout;
-- cálculo de combate e drops.
+- cálculo de combate e drops;
+- configuração CRT/ABI Win32.
 
-Nenhuma refatoração estética justifica alteração de comportamento nesses pontos sem cobertura de regressão.
+Nenhuma refatoração estética justifica mudança nesses pontos sem teste/contrato de regressão correspondente.
+
+## 15. Critério de honestidade do estado
+
+O repositório está significativamente mais verificável do que no baseline inicial, mas ainda **não deve ser descrito como build/deployment totalmente reproduzível nem como modernização concluída**.
+
+Os maiores bloqueadores restantes são behavioral coverage, fronteira de persistência, SQL seguro, full-link provenance e desacoplamento gradual de protocolo/network/state.
