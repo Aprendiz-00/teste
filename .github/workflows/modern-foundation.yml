@@ -8,17 +8,24 @@ on:
       - 'Source/Modern/**'
       - 'tests/**'
       - 'tools/ci/**'
+      - 'config/build-dependencies.json'
       - '.github/workflows/modern-foundation.yml'
   push:
     branches:
       - main
       - 'architecture/**'
+      - 'build/**'
+      - 'security/**'
+      - 'persistence/**'
+      - 'protocol/**'
+      - 'observability/**'
     paths:
       - 'CMakeLists.txt'
       - 'CMakePresets.json'
       - 'Source/Modern/**'
       - 'tests/**'
       - 'tools/ci/**'
+      - 'config/build-dependencies.json'
       - '.github/workflows/modern-foundation.yml'
 
 permissions:

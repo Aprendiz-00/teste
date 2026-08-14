@@ -25,6 +25,10 @@ compile_commands.json
 *.iobj
 *.ipdb
 
+# Temporary compatibility files created by legacy CI
+*.ci.vcxproj
+*.ci.cpp
+
 # Test outputs
 Testing/
 

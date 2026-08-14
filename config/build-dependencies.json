@@ -1,0 +1,10 @@
+{
+  "mysql_connector_c": {
+    "version": "6.1.11",
+    "server_header_version": "5.7.16",
+    "architecture": "Win32",
+    "library": "libmysql.lib",
+    "headers": "Source/Code/include_mysql",
+    "provisioning": "external"
+  }
+}
